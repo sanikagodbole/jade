@@ -3,22 +3,46 @@
 import os
 from pathlib import Path
 import shutil
-from .info import LocalUser
+from jade_api.info import LocalUser
 
-user = LocalUser()
-def create_show():
-    show_root = Path(user.collab_path)
+from typing import Dict
 
-    # create pre, prod, post paths
-    show_dirs = [result.name for result in show_root.iterdir()] 
-    standard_show_dirs = ["pre", "prod", "post", ".tools"]
-    for standard_dir in standard_show_dirs:
-        if standard_dir not in show_dirs:
-            constructed_path = show_root.joinpath(standard_dir) 
-            constructed_path.mkdir(exist_ok=False) 
+# create dictionary of file structure, what folders you want within each folder
+DIR_CONFIG ={
+    'prod': {
+        'asset': {
+            'publish': {
+                'char': {},
+                'prop': {},
+                'set': {}
+            },
+            'working': {
+                'char': {},
+                'prop': {},
+                'set': {}
+            }
+        },
+        'sequences': {}
+    },
+    'pre': {},
+    'post': {},
+    '.tools': {},
+}
 
-    #create prod path
-    prod_root = show_root.joinpath("prod")
+
+def create_show(user: LocalUser):
+    root_dir = Path(user.collab_path)
+    root_dir.mkdir(parents=True, exist_ok=True)
+    create_paths(root_dir, DIR_CONFIG)
+
+
+def create_paths(root_dir, dir_config: Dict):
+    for dir_this_level, sub_dirs in dir_config.items():
+        new_path : Path = root_dir / dir_this_level
+        new_path.mkdir(exist_ok=True)
+        create_paths(root_dir=new_path, dir_config=sub_dirs)
+
+    prod_root = root_dir.joinpath("prod")
     prod_dirs = [result.name for result in prod_root.iterdir()]
     standard_prod_dirs = ["assets", "sequences"]
     for standard_dir in standard_prod_dirs:

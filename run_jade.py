@@ -13,5 +13,6 @@ if __name__ == "__main__":
     #print("Show Acronym:", user.show_acronym)
     print("Collab Path:", user.collab_path)
     print("Show Database:", user.show_database)
+    create_show(user)
 
-create_show()
+

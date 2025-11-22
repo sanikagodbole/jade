@@ -1,0 +1,18 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Run run_jade.py",
+      "type": "python",
+      "request": "launch",
+      "program": "${workspaceFolder}/run_jade.py",
+      "console": "integratedTerminal",
+      "cwd": "${workspaceFolder}",
+      "env": {
+        "JADE_SHOW_NAME": "Stone_Lions_Dont_Roar",
+        "JADE_COLLAB_BASE_DIR": "${env:USERPROFILE}\\jade\\data"
+      },
+      "justMyCode": true
+    }
+  ]
+}
