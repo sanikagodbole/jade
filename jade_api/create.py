@@ -59,3 +59,5 @@ def create_asset():
     assets_root = show_root.joinpath("assets")
     working_root = assets_root.joinpath("working")
     publish_root = assets_root.joinpath("publish")
+
+print("hello jade")

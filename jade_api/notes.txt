@@ -1,0 +1,33 @@
+LINUX COMMANDS
+
+mkdir = make directory
+cd = change directory
+cd ~ = go to home directory
+cd ~/temp = go to temp folder in home directory
+ls = list files
+ls -l = list all files with details ( modify time, type of file, extenstion)
+ls -al = list all files with details INCLUDING hidden files ( modify time, type of file, extenstion)
+ls -a = list all files including hidden files
+pwd = present working directory
+shift insert = paste
+select and right mouse click = copy
+    second right mouse click = paste
+ssh-keygen = generate a public and private encryption key
+    share the public key with github to connect git cli (command line interface) to github.com 
+cat <file name> = to see the contents of the file
+less <file name> = see only few lines of the file at a time
+    hit space to see more lines of the file
+    
+
+
+
+GIT COMMANDS - need to be run inside repo folder
+
+git clone <url of repo> = clone a repo from git server
+git status = shows status of all the files inside repo, also shows which branch you are on
+git branch = lists all the branches you have on your local repo, the branch you are working on is shown with a *
+git diff <file name> = shows difference between latest file and last committed file
+git add <file name> =stage(i.e. mark) the file for commit
+git commit -m "<commit message>" = commit the files on local branch
+git push = push local commit to remote server (e.g. github.com)
+git pull = pull remote commit to local server
