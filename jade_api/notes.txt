@@ -17,6 +17,8 @@ ssh-keygen = generate a public and private encryption key
 cat <file name> = to see the contents of the file
 less <file name> = see only few lines of the file at a time
     hit space to see more lines of the file
+-rm <file name> = remove file
+-rm -rf <file name> = remove folder and subfolders, f is force, dont ask to verify
     
 
 
