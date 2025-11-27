@@ -109,11 +109,86 @@ def create_paths(root_dir, dir_config: Dict): # path of where the directory is l
 
 
 
+def create_new_asset(asset_name: str, asset_type: str, asset_base_path: Path):
+    """
+    Create a new asset directory structure for char, prop, or set.
+    
+    Args:
+        asset_name: Name of the asset (e.g., "lion", "stone", "forest")
+        asset_type: Type of asset ("char", "prop", or "set")
+        asset_base_path: Path to the assets folder (prod/assets)
+    
+    Raises:
+        ValueError: If asset_type is not "char", "prop", or "set"
+    """
+    if asset_type not in ["char", "prop", "set"]:
+        raise ValueError(f"asset_type must be 'char', 'prop', or 'set', got '{asset_type}'")
+    
+    # Define folder structure for each asset type
+    ASSET_WORKING_STRUCTURES = {
+        "char": {
+            "assembly": {"export": {}},
+            "geo": {"export": {}},
+            "rig": {"export": {}},
+            "tex": {"export": {}},
+        },
+        "prop": {
+            "assembly": {"export": {}},
+            "geo": {"export": {}},
+            "tex": {"export": {}},
+        },
+        "set": {
+            "geo": {"export": {}},
+            "tex": {"export": {}},
+        },
+    }
+
+    ASSET_PUBLISH_STRUCTURES = {
+        "char": {
+            "assembly": {},
+            "geo": {},
+            "rig": {},
+            "tex": {},
+        },
+        "prop": {
+            "assembly": {},
+            "geo": {},
+            "tex": {},
+        },
+        "set": {
+            "geo": {},
+            "tex": {},
+        },
+    }
+    
+    # Get the structure for this asset type
+    asset_working_structure = ASSET_WORKING_STRUCTURES[asset_type]
+    asset_publish_structure = ASSET_PUBLISH_STRUCTURES[asset_type]
+    
+    # Create publish and working directories
+    for mode in ["working",]:
+        asset_path = asset_base_path / mode / asset_type / asset_name
+        asset_path.mkdir(parents=True, exist_ok=True)
+
+        create_paths(asset_path, asset_working_structure)
+
+    for mode in ["publish",]:
+        asset_path = asset_base_path / mode / asset_type / asset_name
+        asset_path.mkdir(parents=True, exist_ok=True)
+
+        create_paths(asset_path, asset_publish_structure)
+        
+        # Create subdirectories using the asset structure
+
+    
 
 
-def create_asset(user):
-    show_root = Path(user.collab_path)
-    prod_root = show_root.joinpath("prod")
-    assets_root = show_root.joinpath("assets")
-    working_root = assets_root.joinpath("working")
-    publish_root = assets_root.joinpath("publish")
+
+
+
+# def create_asset(user):
+#     show_root = Path(user.collab_path)
+#     prod_root = show_root.joinpath("prod")
+#     assets_root = show_root.joinpath("assets")
+#     working_root = assets_root.joinpath("working")
+#     publish_root = assets_root.joinpath("publish")
