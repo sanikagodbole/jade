@@ -10,7 +10,8 @@
       "cwd": "${workspaceFolder}",
       "env": {
         "JADE_SHOW_NAME": "Stone_Lions_Dont_Roar",
-        "JADE_COLLAB_BASE_DIR": "${env:USERPROFILE}\\jade\\data"
+        "JADE_COLLAB_BASE_DIR": "D:\\SANIKA\\code\\jadeTEST"
+        ///IN SCHOOL: I-Drive/Savannah/CollaborativeSpace/stonelions 
       },
       "justMyCode": true
     },

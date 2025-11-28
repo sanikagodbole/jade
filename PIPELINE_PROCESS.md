@@ -67,13 +67,18 @@ prod/
 
     sequences/
         seq_010_shot_0010
+        seq_040_shot_0250
             /publish
+                /assembly
                 /light
                 /anim
                 /fx
                 /charfx
                 /set
+                /camera
             /working
+                /assembly
+                    /export
                 /light
                     /export
                 /anim
@@ -83,6 +88,8 @@ prod/
                 /charfx
                     /export
                 /set
+                    /export
+                /camera
                     /export
         seq_010_shot_0020
         seq_010_shot_0030
