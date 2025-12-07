@@ -1,6 +1,7 @@
 {
   "version": "0.2.0",
   "configurations": [
+
     {
       "name": "Run run_jade.py",
       "type": "python",
@@ -23,6 +24,20 @@
       "args": [
         "run",
         "jade_gui/jade_gui.py"
+      ],
+      "jinja": true,
+      "justMyCode": true,
+      "cwd": "${workspaceFolder}",
+      "console": "integratedTerminal"
+    },
+    {
+      "name": "JADE - PyQt App",
+      "type": "python",
+      "request": "launch",
+      "module": "PyQt",
+      "args": [
+        "run",
+        "jade_gui/jade_qt.py"
       ],
       "jinja": true,
       "justMyCode": true,

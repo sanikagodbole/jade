@@ -163,11 +163,3 @@ def create_new_shot(sequence_num: float, shot_num: float, shot_base_path: Path):
         shot_path = shot_base_path / mode / shot_name
         shot_path.mkdir(parents=True, exist_ok=True)
         create_paths(shot_path, SHOT_PUBLISH_STRUCTURE)
-
-
-# def create_asset(user):
-#     show_root = Path(user.collab_path)
-#     prod_root = show_root.joinpath("prod")
-#     assets_root = show_root.joinpath("assets")
-#     working_root = assets_root.joinpath("working")
-#     publish_root = assets_root.joinpath("publish")
