@@ -440,6 +440,8 @@ class PublishAssetForm(QWidget):
             QMessageBox.critical(self, "Publish Error", f"Failed to publish asset: {str(e)}")
 
 
+print("hi")
+
 class CreateShotForm(QWidget):
     """Widget for creating a new shot."""
     def __init__(self, main_window):
