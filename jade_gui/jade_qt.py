@@ -43,7 +43,7 @@ QSS_THEME = """
     /* Title - Main (🌿JADE) */
     #titleMain {
         color: var(--forest-dark);
-        font-size: 30pt;
+        font-size: 70pt;
         font-weight: bold;
         padding-top: 10px;
         padding-bottom: 0px;
@@ -75,7 +75,7 @@ QSS_THEME = """
         border: 2px solid var(--sage-green);
         border-radius: 8px;
         padding: 10px;
-        font-family: 'Courier New', monospace;
+        font-family: 'Consolas', monospace;
         font-size: 9pt;
     }
 
@@ -237,7 +237,6 @@ class NewAssetForm(QWidget):
         super().__init__()
         self.main_window = main_window
         self.setObjectName("newAssetForm")
-        self.setStyleSheet(".ContainerBox {background-color: #f0fff0;}") # Light green tint for this form
         self.init_ui()
 
     def init_ui(self):
@@ -245,6 +244,8 @@ class NewAssetForm(QWidget):
         
         header = QLabel("Create New Asset")
         header.setProperty("class", "SectionHeader")
+        header.setStyleSheet("color: #339664; font-weight: bold;")
+        header.setFont(QFont('Consolas', 15))
         layout.addWidget(header)
         
         # Asset Type Select
@@ -261,6 +262,18 @@ class NewAssetForm(QWidget):
         
         # Create Button
         self.create_button = QPushButton("Create Asset")
+        self.create_button.setFont(QFont('Consolas', 10))
+        self.create_button.setStyleSheet("""
+            QPushButton {
+                background-color: white; 
+                padding: 5px 10px;
+                min-height: 10px;
+                border-radius: 10px;
+            }
+            QPushButton:hover {
+                background-color: #339664;
+            }
+        """)
         self.create_button.clicked.connect(self.handle_create_asset)
         layout.addWidget(self.create_button)
         
@@ -308,7 +321,7 @@ class PublishAssetForm(QWidget):
         super().__init__()
         self.main_window = main_window
         self.setObjectName("publishAssetForm")
-        self.setStyleSheet(".ContainerBox {background-color: #fffff0;}") # Light yellow tint
+        #self.setStyleSheet(".ContainerBox {background-color: #fffff0;}") # Light yellow tint
         self.init_ui()
 
     def init_ui(self):
@@ -316,6 +329,8 @@ class PublishAssetForm(QWidget):
         
         header = QLabel("Publish Asset")
         header.setProperty("class", "SectionHeader")
+        header.setStyleSheet("color: #339664; font-weight: bold;")
+        header.setFont(QFont('Consolas', 15))
         layout.addWidget(header)
         
         # Asset Type Select
@@ -338,7 +353,21 @@ class PublishAssetForm(QWidget):
         
         # Publish Button
         self.publish_button = QPushButton("Publish Asset")
+        self.publish_button.setFont(QFont('Consolas', 10))
+        self.publish_button.setStyleSheet("""
+            QPushButton {
+                background-color: white; 
+                padding: 5px 10px;
+                min-height: 10px;
+                border-radius: 10px;
+            }
+            QPushButton:hover {
+                background-color: #339664;
+            }
+        """)
+
         self.publish_button.clicked.connect(self.handle_publish_asset)
+
         layout.addWidget(self.publish_button)
         
         layout.addStretch(1)
@@ -440,15 +469,13 @@ class PublishAssetForm(QWidget):
             QMessageBox.critical(self, "Publish Error", f"Failed to publish asset: {str(e)}")
 
 
-print("hi")
-
 class CreateShotForm(QWidget):
     """Widget for creating a new shot."""
     def __init__(self, main_window):
         super().__init__()
         self.main_window = main_window
         self.setObjectName("createShotForm")
-        self.setStyleSheet(".ContainerBox {background-color: #f0ffff;}") # Light cyan tint
+        #self.setStyleSheet(".ContainerBox {background-color: #f0ffff;}") # Light cyan tint
         self.init_ui()
 
     def init_ui(self):
@@ -456,22 +483,36 @@ class CreateShotForm(QWidget):
         
         header = QLabel("Create New Shot")
         header.setProperty("class", "SectionHeader")
+        header.setStyleSheet("color: #339664; font-weight: bold;")
+        header.setFont(QFont('Consolas', 15))
         layout.addWidget(header)
         
         # Sequence Input
-        layout.addWidget(QLabel("**Sequence #**"))
+        layout.addWidget(QLabel("Sequence #"))
         self.sequence_input = QLineEdit()
-        self.sequence_input.setPlaceholderText("Enter integer or float (e.g. 1 or 1.5)")
+        self.sequence_input.setPlaceholderText("Enter Sequence #")
         layout.addWidget(self.sequence_input)
 
         # Shot Input
-        layout.addWidget(QLabel("**Shot #**"))
+        layout.addWidget(QLabel("Shot #"))
         self.shot_input = QLineEdit()
-        self.shot_input.setPlaceholderText("Enter integer or float (e.g. 1 or 1.5)")
+        self.shot_input.setPlaceholderText("Enter Shot #)")
         layout.addWidget(self.shot_input)
 
         # Create Button
         self.create_button = QPushButton("Create Shot")
+        self.create_button.setFont(QFont('Consolas', 10))
+        self.create_button.setStyleSheet("""
+            QPushButton {
+                background-color: white; 
+                padding: 5px 10px;
+                min-height: 10px;
+                border-radius: 10px;
+            }
+            QPushButton:hover {
+                background-color: #339664;
+            }
+        """)
         self.create_button.clicked.connect(self.handle_create_shot)
         layout.addWidget(self.create_button)
         
@@ -537,6 +578,8 @@ class DirectoryViewer(QWidget):
 
         header = QLabel("📂 Directory Structure")
         header.setProperty("class", "SectionHeader")
+        header.setStyleSheet("color: #339664; font-weight: bold;")
+        header.setFont(QFont('Consolas', 15))
         layout.addWidget(header)
 
         # 1. Initialize the Model
@@ -596,6 +639,8 @@ class TextDirectoryViewer(QWidget):
         
         header = QLabel("📂 Directory Structure")
         header.setProperty("class", "SectionHeader")
+        header.setStyleSheet("color: #339664; font-weight: bold;")
+        header.setFont(QFont('Consolas', 15))
         layout.addWidget(header)
         
         self.tree_display = QPlainTextEdit()
@@ -629,8 +674,9 @@ class JADEGui(QMainWindow):
         self.base_path: Optional[Path] = None
         self.default_path = Path(r"D:\SANIKA\code\jadeTEST") # Default path from original
         self.setWindowTitle("JADE - Asset Organization & Delivery Pipeline (PyQt)")
+        self.setFont(QFont('Consolas', 10))
         self.setGeometry(100, 100, 1200, 800)
-        self.setStyleSheet(QSS_THEME)
+        #self.setStyleSheet(QSS_THEME)
         self.selected_action = "publish_asset"  # "new_asset"
 
         self.central_widget = QWidget()
@@ -656,7 +702,7 @@ class JADEGui(QMainWindow):
         # LEFT COLUMN: Actions (15%)
         self.actions_panel = self._render_actions_panel()
         self.content_layout.addWidget(self.actions_panel, 15)
-        
+
         # MIDDLE COLUMN: Forms (35%)
         self.forms_container = QVBoxLayout()
         self.forms_widget = QWidget()
@@ -670,7 +716,6 @@ class JADEGui(QMainWindow):
         # RIGHT COLUMN: Directory Viewer (50%)
         self.directory_viewer = DirectoryViewer(self)
         self.content_layout.addWidget(self.directory_viewer, 50)
-
         self.main_layout.addWidget(self.content_container)
         
         # Initialize forms and update path
@@ -685,14 +730,18 @@ class JADEGui(QMainWindow):
         layout.setContentsMargins(10, 10, 10, 10)
         
         # Title
-        title_label = QLabel("🌿JADE")
+        title_label = QLabel("⟢JADE")
         title_label.setObjectName("titleMain")
+        title_label.setStyleSheet("color: #339664; font-size: 50px;")
+        title_label.setFont(QFont('Consolas'))
         title_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
         layout.addWidget(title_label)
         
         # Description
         desc_label = QLabel("An App To Streamline USD Asset Organization & Delivery Pipeline")
         desc_label.setObjectName("titleDescription")
+        desc_label.setStyleSheet("color: #2d5a3d;")
+        desc_label.setFont(QFont('Consolas', 12))
         desc_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
         layout.addWidget(desc_label)
         
@@ -715,11 +764,11 @@ class JADEGui(QMainWindow):
             color = "#dc3545" 
 
         self.message_label.setText(text)
-        self.message_label.setStyleSheet(f"background-color: {color}; color: white; padding: 5px; border-radius: 5px;")
-        
+        #self.message_label.setStyleSheet(f"background-color: {color}; color: white; padding: 5px; border-radius: 10px;")
+
         # QTimer to clear the message after a delay (in milliseconds)
         from PyQt6.QtCore import QTimer
-        QTimer.singleShot(delay, lambda: self.message_label.setStyleSheet("min-height: 20px;"))
+        #QTimer.singleShot(delay, lambda: self.message_label.setStyleSheet("min-height: 20px;"))
         QTimer.singleShot(delay, lambda: self.message_label.setText(""))
 
 
@@ -742,7 +791,18 @@ class JADEGui(QMainWindow):
 
         browse_button = QPushButton("Browse")
         browse_button.clicked.connect(self.browse_folder)
-        browse_button.setStyleSheet("padding: 5px 10px; min-height: 20px;")
+        browse_button.setFont(QFont('Consolas', 10))
+        browse_button.setStyleSheet("""
+            QPushButton {
+                background-color: white; 
+                padding: 5px 10px;
+                min-height: 10px;
+                border-radius: 10px;
+            }
+            QPushButton:hover {
+                background-color: #339664;
+            }
+        """)
         layout.addWidget(browse_button)
 
         self.path_status_label = QLabel("")
@@ -762,7 +822,7 @@ class JADEGui(QMainWindow):
         if new_path.exists() and new_path.is_dir():
             self.base_path = new_path
             self.path_status_label.setText("Path OK")
-            self.path_status_label.setStyleSheet("color: green; font-weight: bold;")
+            self.path_status_label.setStyleSheet( "color: green; font-weight: bold;")
             
             # Re-enable main content if it was disabled
             self.directory_viewer.refresh_tree()
@@ -781,11 +841,57 @@ class JADEGui(QMainWindow):
         
         header = QLabel("Actions")
         header.setProperty("class", "SectionHeader")
+
+        header.setStyleSheet("color: #339664; font-weight: bold;")
+        header.setFont(QFont('Consolas', 15))
+        #header.setAlignment(Qt.AlignmentFlag.AlignCenter)
+
         layout.addWidget(header)
         
         self.publish_btn = QPushButton("Publish Asset")
-        self.new_asset_btn = QPushButton("New Asset")
+        self.publish_btn.setFont(QFont('Consolas', 10))
+        self.publish_btn.setStyleSheet("""
+            QPushButton {
+                background-color: white; 
+                padding: 5px 10px;
+                min-height: 10px;
+                border-radius: 10px;
+            }
+            QPushButton:hover {
+                background-color: #339664;
+            }
+        """)
+
+
+        self.new_asset_btn = QPushButton("Create New Asset")
+        self.new_asset_btn.setFont(QFont('Consolas', 10))
+        self.new_asset_btn.setStyleSheet("""
+            QPushButton {
+                background-color: white; 
+                padding: 5px 10px;
+                min-height: 10px;
+                border-radius: 10px;
+            }
+            QPushButton:hover {
+                background-color: #339664;
+            }
+        """)
+
+
         self.create_shot_btn = QPushButton("Create New Shot")
+        self.create_shot_btn.setFont(QFont('Consolas', 10))
+        self.create_shot_btn.setStyleSheet("""
+            QPushButton {
+                background-color: white; 
+                padding: 5px 10px;
+                min-height: 10px;
+                border-radius: 10px;
+            }
+            QPushButton:hover {
+                background-color: #339664;
+            }
+        """)
+
         
         self.publish_btn.clicked.connect(lambda: self._set_action("publish_asset"))
         self.new_asset_btn.clicked.connect(lambda: self._set_action("new_asset"))
@@ -798,7 +904,7 @@ class JADEGui(QMainWindow):
         layout.addStretch(1) # Push content to the top
         
         # Highlight the initially selected button
-        self.publish_btn.setStyleSheet("background-color: #2a7a54; border: 2px solid white;")
+        #self.publish_btn.setStyleSheet("background-color: #2a7a54; border: 2px solid white;")
 
         return container
 
@@ -807,8 +913,8 @@ class JADEGui(QMainWindow):
         self.selected_action = action_name
         
         # Reset button styles
-        for btn in [self.publish_btn, self.new_asset_btn, self.create_shot_btn]:
-            btn.setStyleSheet("")
+        #for btn in [self.publish_btn, self.new_asset_btn, self.create_shot_btn]:
+            #btn.setStyleSheet("")
             
         # Highlight the new active button
         if action_name == "publish_asset":
@@ -820,16 +926,6 @@ class JADEGui(QMainWindow):
         else:
             raise Exception(f"Invalid action: {action_name}")
 
-        # active_btn = getattr(self, f"{action_name.replace('_', '_')}s_btn" if action_name.endswith('asset') else f"{action_name.replace('_', '_')}s_btn")
-        # if active_btn == self.publish_btn:
-        #     active_btn = self.publish_btn
-        # elif active_btn == self.new_asset_btn:
-        #     active_btn = self.new_asset_btn
-        # elif active_btn == self.create_shot_btn:
-        #     active_btn = self.create_shot_btn
-
-        active_btn.setStyleSheet("background-color: #2a7a54; border: 2px solid white;")
-        
         self._update_middle_column()
 
     def _update_middle_column(self):
