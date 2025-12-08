@@ -2,8 +2,7 @@ import sys
 import time
 from pathlib import Path
 from typing import List, Optional
-import re         # For regular expression matching
-import shutil     # For file copy operations
+import shutil
 
 from PyQt6.QtWidgets import (
     QApplication, QMainWindow, QWidget, QVBoxLayout, QHBoxLayout,
@@ -14,111 +13,8 @@ from PyQt6.QtCore import Qt, QSize, QDir, QModelIndex
 from PyQt6.QtGui import QFont, QColor, QPalette
 from PyQt6.QtGui import QFileSystemModel # This is the key new import
 
-from jade_api.create import create_new_asset, create_new_shot
+from jade_api.create import create_new_asset, create_new_shot, find_highest_version_file
 
-
-# ======================== THEME & STYLING (QSS) ========================
-# Equivalent of apply_theme() in Streamlit
-QSS_THEME = """
-    /* Color palette - Forest & Nature theme */
-    :root {
-        --forest-dark: #1a3d2e;
-        --forest-light: #2d5a3d;
-        --sage-green: #339664;
-        --leaf-green: #339664;
-        --stone-gray: #8b8b7e;
-        --cream: #f9f8f5; /* Light background color */
-    }
-
-    /* Main Window Background */
-    QMainWindow, QWidget {
-        background-color: var(--cream);
-    }
-    
-    /* Global Label/Text Styles */
-    QLabel {
-        color: var(--forest-dark);
-    }
-    
-    /* Title - Main (🌿JADE) */
-    #titleMain {
-        color: var(--forest-dark);
-        font-size: 70pt;
-        font-weight: bold;
-        padding-top: 10px;
-        padding-bottom: 0px;
-        letter-spacing: 2px;
-    }
-    
-    /* Title - Description */
-    #titleDescription {
-        color: #7ba576;
-        font-size: 10pt;
-        font-style: italic;
-        padding-top: 0px;
-        padding-bottom: 20px;
-    }
-
-    /* Section Header */
-    .SectionHeader {
-        color: var(--forest-dark);
-        font-size: 14pt;
-        font-weight: 600;
-        margin-bottom: 5px;
-        border-left: 4px solid var(--sage-green);
-        padding-left: 8px;
-    }
-
-    /* Directory Viewer */
-    #directoryViewer {
-        background-color: #f5f5f5;
-        border: 2px solid var(--sage-green);
-        border-radius: 8px;
-        padding: 10px;
-        font-family: 'Consolas', monospace;
-        font-size: 9pt;
-    }
-
-    /* Buttons (Action Panel & Forms) */
-    QPushButton {
-        background-color: var(--sage-green);
-        color: white;
-        font-weight: 600;
-        border-radius: 8px;
-        padding: 8px 15px;
-        min-height: 30px; /* Ensure sufficient height */
-        margin-bottom: 5px;
-    }
-    
-    QPushButton:hover {
-        background-color: #2a7a54; /* Darker green on hover */
-    }
-
-    /* Inputs (QLineEdit, QComboBox) */
-    QLineEdit, QComboBox {
-        background-color: white;
-        border: 1px solid #ccc;
-        border-radius: 5px;
-        padding: 5px;
-        min-height: 25px;
-    }
-    
-    /* Container Box Styling (like Streamlit containers) */
-    .ContainerBox {
-        background-color: white;
-        border: 1px solid #eee;
-        border-radius: 10px;
-        padding: 15px;
-        margin-bottom: 15px;
-    }
-
-    /* Small/Collapsed Label for Inputs (Placeholder for Streamlit label_visibility="collapsed") */
-    .InputLabel {
-        font-size: 8pt;
-        color: #888;
-        margin-bottom: 2px;
-    }
-"""
 
 # ======================== UTILITY FUNCTIONS ========================
 def get_asset_types() -> List[str]:
@@ -184,51 +80,6 @@ def build_directory_tree(path: Path, prefix: str = "") -> str:
     return tree
 
 
-def find_highest_version_file(export_path: Path, asset_name: str, department: str, file_extension: str) -> Optional[
-    Path]:
-    """
-    Identifies the file with the highest numerical version in the given directory.
-    Pattern: <asset_name>_<department>_v<numerical_version>_<user_initials>.<file_extension>
-
-    The file_extension should include the leading dot, e.g., '.usd'.
-    """
-    if not export_path.is_dir():
-        return None
-
-    # Create the expected file prefix, standardizing to lower case
-    name_prefix = f"{asset_name.lower()}_{department.lower()}_v"
-
-    # List to store (version_number, file_path) tuples
-    versioned_files = []
-
-    # Ensure the extension starts with a dot for accurate filtering
-    ext = file_extension if file_extension.startswith('.') else f".{file_extension}"
-
-    for file_path in export_path.iterdir():
-        filename = file_path.name
-
-        # Check if the file starts with the prefix and ends with the specified extension
-        if filename.startswith(name_prefix) and filename.endswith(ext):
-            try:
-                # Look for digits between 'v' and the next '_'
-                # This regex captures the version number: e.g., 'v' followed by digits, followed by '_'
-                # We use re.escape in case the prefix contains regex special characters (safer practice)
-                match = re.search(f"{re.escape(name_prefix)}(\\d+)_", filename)
-                if match:
-                    version = int(match.group(1))
-                    versioned_files.append((version, file_path))
-            except Exception:
-                # Skip files that don't perfectly conform to the version pattern
-                continue
-
-    if not versioned_files:
-        return None
-
-    # Find the file path associated with the maximum version number
-    highest_version_file = max(versioned_files, key=lambda x: x[0])[1]
-    return highest_version_file
-
-
 # ======================== UI WIDGET CLASSES ========================
 
 class NewAssetForm(QWidget):
@@ -265,7 +116,7 @@ class NewAssetForm(QWidget):
         self.create_button.setFont(QFont('Consolas', 10))
         self.create_button.setStyleSheet("""
             QPushButton {
-                background-color: white; 
+                background-color: #85d5ad; 
                 padding: 5px 10px;
                 min-height: 10px;
                 border-radius: 10px;
@@ -356,9 +207,9 @@ class PublishAssetForm(QWidget):
         self.publish_button.setFont(QFont('Consolas', 10))
         self.publish_button.setStyleSheet("""
             QPushButton {
-                background-color: white; 
+                background-color: #85d5ad; 
                 padding: 5px 10px;
-                min-height: 10px;
+                min-height: 10px;   
                 border-radius: 10px;
             }
             QPushButton:hover {
@@ -450,6 +301,15 @@ class PublishAssetForm(QWidget):
             # Ensure the destination directory exists
             destination_dir.mkdir(parents=True, exist_ok=True)
 
+            if destination_file.exists():
+                try:
+                    # Delete the file before copying the new one
+                    destination_file.unlink()
+                except OSError as e:
+                    QMessageBox.critical(self, "File Delete Error",
+                                         f"Failed to delete existing file: {destination_file.name}. Error: {e}")
+                    return
+
             # 5. Copy the highest version file and rename it
             shutil.copy2(highest_version_file, destination_file)
 
@@ -504,7 +364,7 @@ class CreateShotForm(QWidget):
         self.create_button.setFont(QFont('Consolas', 10))
         self.create_button.setStyleSheet("""
             QPushButton {
-                background-color: white; 
+                background-color: #85d5ad; 
                 padding: 5px 10px;
                 min-height: 10px;
                 border-radius: 10px;
@@ -764,8 +624,6 @@ class JADEGui(QMainWindow):
             color = "#dc3545" 
 
         self.message_label.setText(text)
-        #self.message_label.setStyleSheet(f"background-color: {color}; color: white; padding: 5px; border-radius: 10px;")
-
         # QTimer to clear the message after a delay (in milliseconds)
         from PyQt6.QtCore import QTimer
         #QTimer.singleShot(delay, lambda: self.message_label.setStyleSheet("min-height: 20px;"))
@@ -794,7 +652,7 @@ class JADEGui(QMainWindow):
         browse_button.setFont(QFont('Consolas', 10))
         browse_button.setStyleSheet("""
             QPushButton {
-                background-color: white; 
+                background-color: #85d5ad; 
                 padding: 5px 10px;
                 min-height: 10px;
                 border-radius: 10px;
@@ -852,7 +710,7 @@ class JADEGui(QMainWindow):
         self.publish_btn.setFont(QFont('Consolas', 10))
         self.publish_btn.setStyleSheet("""
             QPushButton {
-                background-color: white; 
+                background-color: #85d5ad; 
                 padding: 5px 10px;
                 min-height: 10px;
                 border-radius: 10px;
@@ -867,7 +725,7 @@ class JADEGui(QMainWindow):
         self.new_asset_btn.setFont(QFont('Consolas', 10))
         self.new_asset_btn.setStyleSheet("""
             QPushButton {
-                background-color: white; 
+                background-color: #85d5ad; 
                 padding: 5px 10px;
                 min-height: 10px;
                 border-radius: 10px;
@@ -882,7 +740,7 @@ class JADEGui(QMainWindow):
         self.create_shot_btn.setFont(QFont('Consolas', 10))
         self.create_shot_btn.setStyleSheet("""
             QPushButton {
-                background-color: white; 
+                background-color: #85d5ad; 
                 padding: 5px 10px;
                 min-height: 10px;
                 border-radius: 10px;
@@ -902,9 +760,6 @@ class JADEGui(QMainWindow):
         layout.addWidget(self.create_shot_btn)
         
         layout.addStretch(1) # Push content to the top
-        
-        # Highlight the initially selected button
-        #self.publish_btn.setStyleSheet("background-color: #2a7a54; border: 2px solid white;")
 
         return container
 

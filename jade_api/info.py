@@ -5,7 +5,7 @@ import sys
 import getpass
 
 class LocalUser:
-    #Retrieves info from the computer for use while commiting changes and transfering files
+    #Retrieves info from the computer for use while commiting changes and transferring files
     def __init__(self):
         #Initializes all variables
         self.user_id = getpass.getuser()
