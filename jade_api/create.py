@@ -134,7 +134,6 @@ def create_new_shot(sequence_num: float, shot_num: float, shot_base_path: Path):
     
     # Define shot folder structures
     SHOT_WORKING_STRUCTURE = {
-        "assembly": {"export": {}},
         "light": {"export": {}},
         "anim": {"export": {}},
         "fx": {"export": {}},
@@ -144,7 +143,6 @@ def create_new_shot(sequence_num: float, shot_num: float, shot_base_path: Path):
     }
     
     SHOT_PUBLISH_STRUCTURE = {
-        "assembly": {},
         "light": {},
         "anim": {},
         "fx": {},
@@ -176,30 +174,25 @@ def find_highest_version_file(export_path: Path, asset_name: str, department: st
     if not export_path.is_dir():
         return None
 
-    # Create the expected file prefix, standardizing to lower case
+    # Create file prefix
     name_prefix = f"{asset_name.lower()}_{department.lower()}_v"
 
-    # List to store (version_number, file_path) tuples
+    # List to store version_number, file_path
     versioned_files = []
 
-    # Ensure the extension starts with a dot for accurate filtering
+    # extension logic
     ext = file_extension if file_extension.startswith('.') else f".{file_extension}"
 
     for file_path in export_path.iterdir():
         filename = file_path.name
 
-        # Check if the file starts with the prefix and ends with the specified extension
         if filename.startswith(name_prefix) and filename.endswith(ext):
             try:
-                # Look for digits between 'v' and the next '_'
-                # This regex captures the version number: e.g., 'v' followed by digits, followed by '_'
-                # We use re.escape in case the prefix contains regex special characters (safer practice)
                 match = re.search(f"{re.escape(name_prefix)}(\\d+)_", filename)
                 if match:
                     version = int(match.group(1))
                     versioned_files.append((version, file_path))
             except Exception:
-                # Skip files that don't perfectly conform to the version pattern
                 continue
 
     if not versioned_files:

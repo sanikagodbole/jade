@@ -1,5 +1,3 @@
-### Option 1:
-
 prod/
     assets/
         publish/
@@ -11,57 +9,33 @@ prod/
                         lion_geo.usd
                     rig/
                         lion_rig.mb
-                    tex/
-                        lion.mtl
-                        lion_baseColor_.1001.png
-                        lion_roughness_.1001.png
             prop/
                 stone/
                     assembly/
                     geo/
-                    tex/
             set/
                 forest/
                     geo/
-                    tex/
         working/
             char/
                 lion/
                     assembly/
                         export/
                             lion_assembly_v001_sg.usd
-                            lion_assembly_v002_sg.usd
-                            lion_mtl_v001_sg.usd
-                            lion_mtl_v002_sg.usd
                         lion_assembly_v001_sg.hip
-                        lion_assembly_v002_sg.hip
                     geo/
                         export/
                             lion_geo_v001_sg.usd
-                            lion_geo_v002_sg.usd
-                            lion_geo_v003_sg.usd
-                        for temp and working files and stuff, files in this folder will be ignored
                         lion_geo_v001_sg.ma
-                        lion_geo_v002_sg.ma
-                        zbrush.zpr
-                        <part>.obj
-                        etc etc
-
-                            
                     rig/
                         export/
                             lion_rig_v001_bm.mb
                             lion_rig_v002_bm.mb
-                            lion_rig_v003_bm.mb
                     tex/
                         export/
                             lion_v001_baseColor_sg.1001.png
                             lion_v001_roughness_sg.1001.png
                             lion_v001_normal_sg.1001.png
-
-                            lion_v002_baseColor_sg.1001.png
-                            lion_v002_roughness_sg.1001.png
-                            lion_v002_normal_sg.1001.png
                         lion_v001_am.spp
                         lion_v002_am.spp
 
@@ -69,16 +43,12 @@ prod/
         seq_010_shot_0010
         seq_040_shot_0250
             /publish
-                /assembly
                 /light
                 /anim
                 /fx
                 /charfx
-                /set
                 /camera
             /working
-                /assembly
-                    /export
                 /light
                     /export
                 /anim
@@ -86,11 +56,14 @@ prod/
                 /fx
                     /export
                 /charfx
-                    /export
-                /set
                     /export
                 /camera
                     /export
         seq_010_shot_0020
         seq_010_shot_0030
         seq_020_shot_0010
+
+
+
+
+<asset_name>_<department>_<version#>_<initials>.<ext>

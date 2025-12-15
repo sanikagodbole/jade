@@ -44,6 +44,31 @@ def get_asset_names(base_path: Path, asset_type: str) -> List[str]:
     
     return sorted(list(asset_names))
 
+
+def get_shot_names(base_path: Path) -> List[str]:
+    """Get unique shot folder names from the sequences directory"""
+    sequences_dir = base_path / "prod" / "sequences"
+    if not sequences_dir.exists():
+        return []
+
+    # Looks for folders starting with 'seq_' (e.g., seq_010_shot_0010)
+    shot_names = [item.name for item in sequences_dir.iterdir() if item.is_dir() and item.name.startswith("seq_")]
+    return sorted(shot_names)
+
+
+def get_shot_departments(base_path: Path, shot_name: str) -> List[str]:
+    """Get all department folder names from a specific shot's working directory."""
+    # Construct the path to the working directory for the specific shot
+    working_dir = base_path / "prod" / "sequences" / shot_name / "working"
+
+    if not working_dir.exists():
+        return []
+
+    # Return names of all sub-directories inside 'working', ignoring hidden folders
+    depts = [item.name for item in working_dir.iterdir() if item.is_dir() and not item.name.startswith('.')]
+    return sorted(depts)
+
+
 def build_directory_tree(path: Path, prefix: str = "") -> str:
     """Build a text-based directory tree visualization (Streamlit function preserved)"""
     tree = ""
@@ -195,13 +220,17 @@ class PublishAssetForm(QWidget):
         layout.addWidget(QLabel("Asset Name"))
         self.asset_name_combo = QComboBox()
         layout.addWidget(self.asset_name_combo)
-        
-        # Department Select
+
+        # Department Select (Now the primary filter)
         layout.addWidget(QLabel("Department"))
         self.department_combo = QComboBox()
-        self.department_combo.addItems(["Geo", "Rig", "Tex"])
+        # Unified list of asset and shot departments
+        self.department_combo.addItems(["geo", "rig", "assembly"])
+        self.department_combo.currentIndexChanged.connect(self.update_asset_names)
         layout.addWidget(self.department_combo)
-        
+
+
+
         # Publish Button
         self.publish_button = QPushButton("Publish Asset")
         self.publish_button.setFont(QFont('Consolas', 10))
@@ -230,7 +259,7 @@ class PublishAssetForm(QWidget):
         asset_names = []
         if base_path and base_path.exists():
             asset_names = get_asset_names(base_path, asset_type)
-        
+
         self.asset_name_combo.clear()
         if asset_names:
             self.asset_name_combo.addItems(asset_names)
@@ -240,94 +269,199 @@ class PublishAssetForm(QWidget):
             self.publish_button.setEnabled(False)
 
     def handle_publish_asset(self):
-        """Handle publish asset button click: finds highest version and copies it to the publish folder."""
+        """Handle publish asset button click: handles both Assets and Shots based on department selection."""
         base_path = self.main_window.base_path
         asset_name = self.asset_name_combo.currentText()
         asset_type = self.asset_type_combo.currentText()
-        department = self.department_combo.currentText()
+        department = self.department_combo.currentText().lower()
 
-        # Map asset type (e.g., 'Character') to its key (e.g., 'char')
-        asset_type_map = {"Character": "char", "Prop": "prop", "Set": "set"}
-        asset_type_key = asset_type_map.get(asset_type)
-
-        if asset_name == "No assets found" or not asset_type_key or not base_path:
-            QMessageBox.warning(self, "Warning", "Please ensure a valid asset and base path are selected.")
+        # Validation
+        if asset_name == "No assets found" or not base_path:
+            QMessageBox.warning(self, "Warning", "Please ensure a valid selection and base path.")
             return
 
-        # 1. Determine the required file extensions based on department
+        # 1. Unified Department Map for Assets and Shots
         department_map = {
-            "geo": {
-                "source_ext": ".usd",
-                "publish_ext": ".usd"
-            },
-            "rig": {
-                "source_ext": ".mb",
-                "publish_ext": ".mb"
-            },
-            "tex": {
-                "source_ext": ".png",
-                "publish_ext": ".png"
-            }
+            # Asset Departments
+            "geo": [(".usd", ".usd")],
+            "rig": [(".ma", ".ma")],
+            "assembly": [
+                (".geo.usdc", ".geo.usdc"),
+                (".mtl.usdc", ".mtl.usdc"),
+                (".payload.usdc", ".payload.usdc"),
+                (".usd", ".usd")
+            ],
         }
 
-        dept_info = department_map.get(department.lower())
-
-        if not dept_info:
-            QMessageBox.warning(self, "Warning", f"Publish logic not implemented for department: {department}")
+        target_extensions = department_map.get(department)
+        if not target_extensions:
+            QMessageBox.warning(self, "Warning", f"Publish logic not implemented for: {department}")
             return
 
-        source_ext = dept_info["source_ext"]
-        publish_ext = dept_info["publish_ext"]
+        try:
+            # 2. Determine Path Logic (Asset vs Shot)
+            is_shot = department in ["light", "anim", "fx", "charfx", "camera"]
+
+            if is_shot:
+                # Shot Path: prod/sequences/<shot_name>/working/<dept>/export
+                # asset_name_combo contains the sequence/shot folder name (e.g. seq_010_shot_0010)
+                source_dir = base_path / "prod" / "sequences" / asset_name / "working" / department / "export"
+                destination_dir = base_path / "prod" / "sequences" / asset_name / "publish" / department
+                identifier_name = asset_name
+            else:
+                # Asset Path: prod/asset/working/<type>/<name>/<dept>/export
+                asset_type_map = {"Character": "char", "Prop": "prop", "Set": "set"}
+                asset_type_key = asset_type_map.get(asset_type)
+
+                source_dir = base_path / "prod" / "asset" / "working" / asset_type_key / asset_name / department / "export"
+                destination_dir = base_path / "prod" / "asset" / "publish" / asset_type_key / asset_name / department
+                identifier_name = asset_name
+
+            # 3. Process each extension pair defined in the map
+            files_published = []
+            for source_ext, publish_ext in target_extensions:
+                # Identify highest version using the API utility
+                highest_version_file = find_highest_version_file(source_dir, identifier_name, department, source_ext)
+
+                if not highest_version_file:
+                    continue  # Skip if this specific extension is missing
+
+                # Define publish file name: <identifier>_<dept>.<ext>
+                new_file_name = f"{identifier_name.lower()}_{department}{publish_ext}"
+                destination_file = destination_dir / new_file_name
+
+                # Ensure directory exists and remove existing file to ensure clean overwrite
+                destination_dir.mkdir(parents=True, exist_ok=True)
+                if destination_file.exists():
+                    destination_file.unlink()
+
+                # Perform copy
+                shutil.copy2(highest_version_file, destination_file)
+                files_published.append(new_file_name)
+
+            # 4. Success UI Feedback
+            if files_published:
+                self.main_window.show_message(
+                    f"Published {len(files_published)} files for {identifier_name}",
+                    "success"
+                )
+                self.main_window.directory_viewer.refresh_tree()
+            else:
+                QMessageBox.information(self, "Not Found",
+                                        f"No versioned files found for {department} in {source_dir.name}")
+
+        except Exception as e:
+            import traceback
+            traceback.print_exc()
+            QMessageBox.critical(self, "Publish Error", f"Failed to publish: {str(e)}")
+
+
+class PublishShotForm(QWidget):
+    """Widget for publishing a shot."""
+
+    def __init__(self, main_window):
+        super().__init__()
+        self.main_window = main_window
+        self.setObjectName("publishShotForm")
+        self.init_ui()
+
+    def init_ui(self):
+        layout = QVBoxLayout(self)
+        header = QLabel("Publish Shot")
+        header.setProperty("class", "SectionHeader")
+        header.setStyleSheet("color: #339664; font-weight: bold;")
+        header.setFont(QFont('Consolas', 15))
+        layout.addWidget(header)
+
+        # Shot Name Dropdown
+        layout.addWidget(QLabel("Shot #"))
+        self.shot_name_combo = QComboBox()
+        # Trigger department refresh when shot selection changes
+        self.shot_name_combo.currentIndexChanged.connect(self.update_departments)
+        layout.addWidget(self.shot_name_combo)
+
+        # Department Dropdown (Now Dynamic)
+        layout.addWidget(QLabel("Department"))
+        self.department_combo = QComboBox()
+        layout.addWidget(self.department_combo)
+
+        # Publish Button
+        self.publish_button = QPushButton("Publish Shot")
+        self.publish_button.setFont(QFont('Consolas', 10))
+        self.publish_button.setStyleSheet("""
+            QPushButton { background-color: #85d5ad; padding: 5px 10px; min-height: 10px; border-radius: 10px; }
+            QPushButton:hover { background-color: #339664; }
+        """)
+        self.publish_button.clicked.connect(self.handle_publish_shot)
+        layout.addWidget(self.publish_button)
+
+        layout.addStretch(1)
+        self.refresh_shots()
+
+    def update_departments(self):
+        """Dynamic refresh: gets departments based on the currently selected shot."""
+        base_path = self.main_window.base_path
+        shot_name = self.shot_name_combo.currentText()
+
+        if not base_path or shot_name == "No shots found":
+            self.department_combo.clear()
+            return
+
+        # Fetch folders directly from the filesystem
+        depts = get_shot_departments(base_path, shot_name)
+
+        self.department_combo.clear()
+        if depts:
+            self.department_combo.addItems(depts)
+            self.publish_button.setEnabled(True)
+        else:
+            self.department_combo.addItem("No departments found")
+            self.publish_button.setEnabled(False)
+
+
+    def refresh_shots(self):
+        base_path = self.main_window.base_path
+        names = get_shot_names(base_path) if base_path else []
+        self.shot_name_combo.clear()
+        if names:
+            self.shot_name_combo.addItems(names)
+            self.publish_button.setEnabled(True)
+        else:
+            self.shot_name_combo.addItem("No shots found")
+            self.publish_button.setEnabled(False)
+
+    def handle_publish_shot(self):
+        base_path = self.main_window.base_path
+        shot_name = self.shot_name_combo.currentText()
+        department = self.department_combo.currentText().lower()
 
         try:
-            # 2. Define source (working) path where versioned files reside
-            source_dir = base_path / "prod" / "asset" / "working" / asset_type_key / asset_name / department / "export"
+            # SHOT PATHS: prod/sequences/<shot_name>/working/<dept>/export
+            source_dir = base_path / "prod" / "sequences" / shot_name / "working" / department / "export"
+            destination_dir = base_path / "prod" / "sequences" / shot_name / "publish" / department
 
-            # 3. Identify the highest version file using the correct extension
-            highest_version_file = find_highest_version_file(source_dir, asset_name, department, source_ext)
+            # Identify highest version using your find_highest_version_file in create.py
+            # Extension is set to .usd as per your requirement
+            highest_file = find_highest_version_file(source_dir, shot_name, department, ".usd")
 
-            if not highest_version_file:
-                QMessageBox.warning(self, "Warning",
-                                    f"No versioned files ({source_ext}) found in: {source_dir}")
+            if not highest_file:
+                QMessageBox.warning(self, "Not Found", f"No versioned .usd files found in {source_dir}")
                 return
 
-            # 4. Define the destination folder (publish)
-            destination_dir = base_path / "prod" / "asset" / "publish" / asset_type_key / asset_name / department
+            # Final name: seq_010_shot_0010_light.usd
+            dest_file = destination_dir / f"{shot_name}_{department}.usd"
 
-            # Define the new file name (no version, no initials: e.g., lion_geo.usd or lion_rig.mb)
-            new_file_name = f"{asset_name.lower()}_{department.lower()}{publish_ext}"
-            destination_file = destination_dir / new_file_name
-
-            # Ensure the destination directory exists
             destination_dir.mkdir(parents=True, exist_ok=True)
+            if dest_file.exists():
+                dest_file.unlink()
 
-            if destination_file.exists():
-                try:
-                    # Delete the file before copying the new one
-                    destination_file.unlink()
-                except OSError as e:
-                    QMessageBox.critical(self, "File Delete Error",
-                                         f"Failed to delete existing file: {destination_file.name}. Error: {e}")
-                    return
+            shutil.copy2(highest_file, dest_file)
 
-            # 5. Copy the highest version file and rename it
-            shutil.copy2(highest_version_file, destination_file)
-
-            # 6. Success messages and GUI refresh
-            self.main_window.show_message(
-                f"Asset '{asset_name}' published from '{highest_version_file.name}'",
-                "success"
-            )
-            self.main_window.show_message(
-                f"Published as: {destination_file.name}",
-                "info",
-                delay=3000
-            )
+            self.main_window.show_message(f"Shot '{shot_name}' {department} published successfully!", "success")
             self.main_window.directory_viewer.refresh_tree()
 
         except Exception as e:
-            QMessageBox.critical(self, "Publish Error", f"Failed to publish asset: {str(e)}")
-
+            QMessageBox.critical(self, "Error", f"Failed to publish shot: {str(e)}")
 
 class CreateShotForm(QWidget):
     """Widget for creating a new shot."""
@@ -553,7 +687,7 @@ class JADEGui(QMainWindow):
         # 2. Base Folder Input
         self.base_path_widget = self._render_base_folder_input()
         self.main_layout.addWidget(self.base_path_widget)
-        
+
         # 3. Main Content (Three-Column Layout: Actions | Forms | Viewer)
         self.content_container = QWidget()
         self.content_layout = QHBoxLayout(self.content_container)
@@ -572,6 +706,7 @@ class JADEGui(QMainWindow):
         self.new_asset_form = NewAssetForm(self)
         self.publish_asset_form = PublishAssetForm(self)
         self.create_shot_form = CreateShotForm(self)
+        self.publish_shot_form = PublishShotForm(self)
 
         # RIGHT COLUMN: Directory Viewer (50%)
         self.directory_viewer = DirectoryViewer(self)
@@ -720,6 +855,15 @@ class JADEGui(QMainWindow):
             }
         """)
 
+        self.publish_shot_btn = QPushButton("Publish Shot")
+        self.publish_shot_btn.setFont(QFont('Consolas', 10))
+        self.publish_shot_btn.setStyleSheet("""
+                    QPushButton { background-color: #85d5ad; padding: 5px 10px; min-height: 10px; border-radius: 10px; }
+                    QPushButton:hover { background-color: #339664; }
+                """)
+        self.publish_shot_btn.clicked.connect(lambda: self._set_action("publish_shot"))
+        layout.addWidget(self.publish_shot_btn)
+
 
         self.new_asset_btn = QPushButton("Create New Asset")
         self.new_asset_btn.setFont(QFont('Consolas', 10))
@@ -754,11 +898,16 @@ class JADEGui(QMainWindow):
         self.publish_btn.clicked.connect(lambda: self._set_action("publish_asset"))
         self.new_asset_btn.clicked.connect(lambda: self._set_action("new_asset"))
         self.create_shot_btn.clicked.connect(lambda: self._set_action("create_shot"))
-        
+
         layout.addWidget(self.publish_btn)
+        layout.addSpacing(15)
+        layout.addWidget(self.publish_shot_btn)
+        layout.addSpacing(15)
         layout.addWidget(self.new_asset_btn)
+        layout.addSpacing(15)
         layout.addWidget(self.create_shot_btn)
-        
+        layout.addSpacing(15)
+
         layout.addStretch(1) # Push content to the top
 
         return container
@@ -766,21 +915,21 @@ class JADEGui(QMainWindow):
     def _set_action(self, action_name):
         """Set the current action and update the middle column."""
         self.selected_action = action_name
-        
-        # Reset button styles
-        #for btn in [self.publish_btn, self.new_asset_btn, self.create_shot_btn]:
-            #btn.setStyleSheet("")
-            
-        # Highlight the new active button
+
+        # Determine the active button to potentially highlight it
         if action_name == "publish_asset":
             active_btn = self.publish_btn
+        elif action_name == "publish_shot":
+            active_btn = self.publish_shot_btn
         elif action_name == "new_asset":
             active_btn = self.new_asset_btn
         elif action_name == "create_shot":
             active_btn = self.create_shot_btn
         else:
+            # This safety check ensures we don't try to run an undefined action
             raise Exception(f"Invalid action: {action_name}")
 
+        # Refresh the UI to show the correct form in the middle column
         self._update_middle_column()
 
     def _update_middle_column(self):
@@ -795,7 +944,9 @@ class JADEGui(QMainWindow):
             self.forms_container.addWidget(self.new_asset_form)
         elif self.selected_action == "publish_asset":
             self.forms_container.addWidget(self.publish_asset_form)
-            self.publish_asset_form.update_asset_names() # Refresh asset list on switch
+        elif self.selected_action == "publish_shot":  # New Action
+            self.forms_container.addWidget(self.publish_shot_form)
+            self.publish_shot_form.refresh_shots()
         elif self.selected_action == "create_shot":
             self.forms_container.addWidget(self.create_shot_form)
 
