@@ -29,13 +29,12 @@ prod/
                         lion_geo_v001_sg.ma
                     rig/
                         export/
-                            lion_rig_v001_bm.mb
-                            lion_rig_v002_bm.mb
+                            lion_rig_v001_sg.mb
+                            lion_rig_v002_sg.mb
                     tex/
                         export/
                             lion_v001_baseColor_sg.1001.png
                             lion_v001_roughness_sg.1001.png
-                            lion_v001_normal_sg.1001.png
                         lion_v001_am.spp
                         lion_v002_am.spp
 

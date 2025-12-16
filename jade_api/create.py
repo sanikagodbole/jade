@@ -164,12 +164,14 @@ def create_new_shot(sequence_num: float, shot_num: float, shot_base_path: Path):
         create_paths(shot_path, SHOT_PUBLISH_STRUCTURE)
 
 
-def find_highest_version_file(export_path: Path, asset_name: str, department: str, file_extension: str):
+def find_highest_version_file(export_path: Path, asset_name: str, department: str, file_extension: None,
+                              is_folder_search: bool = False):
     """
-    Identifies the file with the highest numerical version in the given directory.
+    Identifies the file or folder with the highest numerical version in the given directory.
     Pattern: <asset_name>_<department>_v<numerical_version>_<user_initials>.<file_extension>
 
     The file_extension should include the leading dot, e.g., '.usd'.
+    If is_folder_search is True, file_extension is ignored and we look for folders.
     """
     if not export_path.is_dir():
         return None
@@ -177,28 +179,39 @@ def find_highest_version_file(export_path: Path, asset_name: str, department: st
     # Create file prefix
     name_prefix = f"{asset_name.lower()}_{department.lower()}_v"
 
-    # List to store version_number, file_path
-    versioned_files = []
+    # List to store version_number, item_path
+    versioned_items = []
 
-    # extension logic
-    ext = file_extension if file_extension.startswith('.') else f".{file_extension}"
+    # Prepare extension suffix if searching for files
+    ext_suffix = file_extension if file_extension and file_extension.startswith(
+        '.') else f".{file_extension}" if file_extension else ""
 
-    for file_path in export_path.iterdir():
-        filename = file_path.name
+    for item_path in export_path.iterdir():
 
-        if filename.startswith(name_prefix) and filename.endswith(ext):
-            try:
-                match = re.search(f"{re.escape(name_prefix)}(\\d+)_", filename)
-                if match:
-                    version = int(match.group(1))
-                    versioned_files.append((version, file_path))
-            except Exception:
-                continue
+        # Check if the item type matches what we are looking for
+        if (is_folder_search and item_path.is_dir()) or (not is_folder_search and item_path.is_file()):
 
-    if not versioned_files:
+            item_name = item_path.name
+
+            # Check for prefix
+            if item_name.startswith(name_prefix):
+
+                # Check for correct extension suffix (only for files)
+                if not is_folder_search and not item_name.endswith(ext_suffix):
+                    continue
+
+                try:
+                    # The regex captures the version number (digits between 'v' and the next '_')
+                    match = re.search(f"{re.escape(name_prefix)}(\\d+)_", item_name)
+                    if match:
+                        version = int(match.group(1))
+                        versioned_items.append((version, item_path))
+                except Exception:
+                    continue
+
+    if not versioned_items:
         return None
 
-    # Find the file path associated with the maximum version number
-    highest_version_file = max(versioned_files, key=lambda x: x[0])[1]
-    return highest_version_file
-
+    # Find the item path associated with the maximum version number
+    highest_version_item = max(versioned_items, key=lambda x: x[0])[1]
+    return highest_version_item
