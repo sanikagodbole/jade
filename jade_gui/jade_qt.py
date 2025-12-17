@@ -277,10 +277,8 @@ class PublishAssetForm(QWidget):
             self.asset_name_combo.addItem("No assets found")
             self.publish_button.setEnabled(False)
 
-
-
     def handle_publish_asset(self):
-        """Handle publish asset button click: handles Assets, Shots, and special TEX folder logic."""
+        """Handle publish asset button click: focused strictly on Assets."""
         base_path = self.main_window.base_path
         asset_name = self.asset_name_combo.currentText()
         asset_type = self.asset_type_combo.currentText()
@@ -291,29 +289,20 @@ class PublishAssetForm(QWidget):
             QMessageBox.warning(self, "Warning", "Please ensure a valid selection and base path.")
             return
 
-        # 1. Unified Department Map for Assets and Shots
-        # Format: (source_ext, publish_ext, item_type)
         department_map = {
-            # Asset Departments
             "geo": [(".usd", ".usd", "file")],
             "rig": [(".ma", ".ma", "file")],
             "assembly": [
                 (".geo.usdc", ".geo.usdc", "file"),
                 (".mtl.usdc", ".mtl.usdc", "file"),
                 (".payload.usdc", ".payload.usdc", "file"),
-                (".usd", ".usd", "file")
+                (".usd", ".usd", "file"),
+                (None, ".textures", "folder")
             ],
-            # TEX: Handles both a possible single file and the special folder logic
             "tex": [
-                (".png", ".png", "file"),  # Main .png file (if needed)
-                (None, ".textures", "folder")  # Placeholder for the texture folder logic
-            ],
-            # Shot Departments (Add these here if they were not in your latest uploaded version)
-            "light": [(".usd", ".usd", "file")],
-            "anim": [(".usd", ".usd", "file")],
-            "fx": [(".usd", ".usd", "file")],
-            "charfx": [(".usd", ".usd", "file")],
-            "camera": [(".usd", ".usd", "file")]
+                (".png", ".png", "file"),
+                (None, ".textures", "folder")
+            ]
         }
 
         target_extensions = department_map.get(department)
@@ -322,126 +311,94 @@ class PublishAssetForm(QWidget):
             return
 
         try:
-            # 2. Determine Path Logic (Asset vs Shot)
-            is_shot = department in ["light", "anim", "fx", "charfx", "camera"]
+            # Simplified Asset-Only Path Logic
+            asset_type_map = {"Character": "char", "Prop": "prop", "Set": "set"}
+            asset_type_key = asset_type_map.get(asset_type)
 
-            if is_shot:
-                # Shot Path: prod/sequences/<shot_name>/working/<dept>/export
-                source_dir = base_path / "prod" / "sequences" / asset_name / "working" / department / "export"
-                destination_dir = base_path / "prod" / "sequences" / asset_name / "publish" / department
-                identifier_name = asset_name
-            else:
-                # Asset Path: prod/asset/working/<type>/<name>/<dept>/export
-                asset_type_map = {"Character": "char", "Prop": "prop", "Set": "set"}
-                asset_type_key = asset_type_map.get(asset_type)
+            source_dir = base_path / "prod" / "asset" / "working" / asset_type_key / asset_name / department / "export"
+            destination_dir = base_path / "prod" / "asset" / "publish" / asset_type_key / asset_name / department
+            identifier_name = asset_name
 
-                source_dir = base_path / "prod" / "asset" / "working" / asset_type_key / asset_name / department / "export"
-                destination_dir = base_path / "prod" / "asset" / "publish" / asset_type_key / asset_name / department
-                identifier_name = asset_name
-
-            # Ensure destination folder exists
             destination_dir.mkdir(parents=True, exist_ok=True)
-
-            # 3. Handle Special Case: TEX Department Folder Publish (Folder Copy/Rename Contents)
             files_published = []
+            source_file_details = []
 
+            # 3. Special Case: TEX Department
             if department == "tex":
-
-                # Find the highest version FOLDER (is_folder_search=True flag is handled internally by find_highest_version_file)
                 highest_source_folder = find_highest_version_file(
-                    export_path=source_dir,
-                    asset_name=identifier_name,
-                    department=department,
-                    file_extension=None,
-                    is_folder_search=True
+                    source_dir, identifier_name, department, None, is_folder_search=True
                 )
-
                 if highest_source_folder:
-
-                    # 3a. Clear the destination folder contents
+                    source_file_details.append(highest_source_folder.name)
+                    # Clear destination
                     for item in destination_dir.iterdir():
                         if item.is_dir():
                             shutil.rmtree(item)
                         else:
                             item.unlink()
 
-                    # 3b. Rename and Copy Contents
-
-                    # Regex to match and remove the version/initials pattern: _v[digits]_[initials/user]
-                    # This targets the middle part of names like 'emBase_tex_v001_am_BaseColor.1001.png'
                     version_and_initials_pattern = re.compile(r'_v\d+_[a-zA-Z]+')
-
                     items_copied_count = 0
-
                     for source_item_path in highest_source_folder.iterdir():
                         item_name = source_item_path.name
-
-                        # Apply renaming only to files that match the version pattern
                         if source_item_path.is_file() and version_and_initials_pattern.search(item_name):
-
-                            # Clean the name: remove the matched pattern (version number and initials)
                             new_item_name = version_and_initials_pattern.sub('', item_name)
-                            dest_item_path = destination_dir / new_item_name
-
-                            shutil.copy2(source_item_path, dest_item_path)
+                            shutil.copy2(source_item_path, destination_dir / new_item_name)
                             items_copied_count += 1
-
-                        # Copy folders/unmatched files without renaming
                         else:
                             dest_item_path = destination_dir / item_name
                             if source_item_path.is_dir():
                                 shutil.copytree(source_item_path, dest_item_path)
-                            elif source_item_path.is_file():
+                            else:
                                 shutil.copy2(source_item_path, dest_item_path)
                             items_copied_count += 1
+                    files_published.append(f"TEX Folder: {items_copied_count} items")
 
-                    files_published.append(
-                        f"TEX Folder Contents: {items_copied_count} items from {highest_source_folder.name}")
+            # 4. Special Case: ASSEMBLY Department (Folder Logic)
+            elif department == "assembly":
+                highest_source_folder = find_highest_version_file(
+                    source_dir, identifier_name, department, None, is_folder_search=True
+                )
+                if highest_source_folder:
+                    source_file_details.append(highest_source_folder.name)
+                    dest_textures_path = destination_dir / ".textures"
 
-            # 4. Standard Publishing Loop (Files only: geo, rig, assembly, or simple tex files)
+                    if dest_textures_path.exists():
+                        shutil.rmtree(dest_textures_path)
 
+                    shutil.copytree(highest_source_folder, dest_textures_path)
+                    files_published.append(f"Assembly Folder: .textures")
+
+            # 5. Standard Publishing Loop (Files)
             for source_ext, publish_ext, item_type in target_extensions:
-
-                # Skip the folder item type since it was handled above
                 if item_type == "folder":
                     continue
 
-                # --- FILE COPY LOGIC ---
-
                 highest_source_file = find_highest_version_file(source_dir, identifier_name, department, source_ext)
-
                 if not highest_source_file:
                     continue
 
-                # Define publish file name: <identifier>_<dept>.<ext>
+                source_file_details.append(highest_source_file.name)
                 new_file_name = f"{identifier_name.lower()}_{department}{publish_ext}"
                 destination_file = destination_dir / new_file_name
 
-                # Ensure directory exists and remove existing file
                 if destination_file.exists():
                     destination_file.unlink()
 
-                # Perform copy
                 shutil.copy2(highest_source_file, destination_file)
                 files_published.append(new_file_name)
 
-            # 5. Success UI Feedback
+            # 6. Success and Logging
             if files_published:
-                self.main_window.show_message(
-                    f"Published {len(files_published)} files/items for {identifier_name}",
-                    "success"
-                )
+                self.main_window.show_message(f"Published items for {identifier_name}", "success")
                 self.main_window.directory_viewer.refresh_tree()
-
                 log_action(
                     base_path=base_path,
                     action="Publish_Asset",
-                    details=f"{department.upper()} / {identifier_name} | Sources: {highest_source_file.name} ",
+                    details=f"{department.upper()} / {identifier_name} | Sources: {', '.join(source_file_details)}"
                 )
-
             else:
-                QMessageBox.information(self, "Not Found",
-                                        f"No versioned files or folders found for {department}.")
+                QMessageBox.information(self, "Not Found", f"No versioned items found for {department}.")
 
         except Exception as e:
             import traceback
