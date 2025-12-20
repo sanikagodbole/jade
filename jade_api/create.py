@@ -177,7 +177,7 @@ def find_highest_version_file(export_path: Path, asset_name: str, department: st
         return None
 
     # Create file prefix
-    name_prefix = f"{asset_name.lower()}_{department.lower()}_v"
+    name_prefix = f"{asset_name}_{department}_v"
 
     # List to store version_number, item_path
     versioned_items = []

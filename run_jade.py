@@ -10,7 +10,6 @@ if __name__ == "__main__":
     print("User ID:", user.user_id)
     print("System OS:", user.system_os)
     print("Show Name:", user.show_name)
-    #print("Show Acronym:", user.show_acronym)
     print("Collab Path:", user.collab_path)
     print("Show Database:", user.show_database)
     create_show(user)

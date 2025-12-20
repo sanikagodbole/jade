@@ -1,7 +1,7 @@
 ## Jade - A tool to streamline VFX Pipeline
 
 ### Introduction
-This tool is use to streamline the creation of the folder structure for pipeline creation, update and versioning.
+This tool is used to streamline the creation of the folder structure for pipeline creation, update and versioning.
 
 ---
 

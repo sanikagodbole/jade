@@ -17,20 +17,6 @@
       "justMyCode": true
     },
     {
-      "name": "JADE - Streamlit App",
-      "type": "python",
-      "request": "launch",
-      "module": "streamlit",
-      "args": [
-        "run",
-        "jade_gui/jade_gui.py"
-      ],
-      "jinja": true,
-      "justMyCode": true,
-      "cwd": "${workspaceFolder}",
-      "console": "integratedTerminal"
-    },
-    {
       "name": "JADE - PyQt App",
       "type": "python",
       "request": "launch",

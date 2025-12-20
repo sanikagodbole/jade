@@ -1,8 +1,6 @@
 import datetime
 import getpass
 from pathlib import Path
-from typing import Optional
-
 
 def log_action(base_path: Path, action: str, details: str = ""):
     """

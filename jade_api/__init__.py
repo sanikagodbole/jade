@@ -2,11 +2,10 @@
 
 import logging
 
-#from .database import *
 #from .transfer import *
 from .info import *
 from .create import *
-#from .telemetry import *
+#from .remoteSetup import *
 
 # API wide config
 logging.basicConfig(level=logging.DEBUG)
