@@ -1,11 +1,10 @@
 #Init module and some logging defaults
 
-import logging
 
+import logging
 #from .transfer import *
 from .info import *
 from .create import *
-#from .remoteSetup import *
 
 # API wide config
 logging.basicConfig(level=logging.DEBUG)

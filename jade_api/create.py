@@ -1,11 +1,9 @@
 #create folder structure
 
-import os
 from pathlib import Path
 from jade_api.info import LocalUser
 from typing import Dict
 import re
-import shutil
 
 # create dictionary of file structure, what folders you want within each folder
 DIR_CONFIG = {
@@ -117,6 +115,8 @@ def create_new_asset(asset_name: str, asset_type: str, asset_base_path: Path):
         create_paths(asset_path, asset_publish_structure)
 
 
+
+
 def create_new_shot(sequence_num: float, shot_num: float, shot_base_path: Path):
     """
     Create a new shot directory structure under working and publish folders.
@@ -162,6 +162,43 @@ def create_new_shot(sequence_num: float, shot_num: float, shot_base_path: Path):
         shot_path = shot_base_path / shot_name / mode
         shot_path.mkdir(parents=True, exist_ok=True)
         create_paths(shot_path, SHOT_PUBLISH_STRUCTURE)
+
+
+def create_new_shot_asset(shot_name: str, shot_asset_name: str, shot_base_path: Path):
+    """
+    Create a new shot-specific asset structure.
+
+    Args:
+        shot_name: The name of the shot (e.g., 'seq_010_shot_0010')
+        asset_name: The name of the specific asset to create
+        shot_base_path: Path to the sequences folder (prod/sequences)
+    """
+
+    # Define the specific internal structures for shot-based assets
+    # Working includes an 'export' folder
+    SHOT_ASSET_WORKING_STRUCTURE = {
+        shot_asset_name: {
+                "export": {}
+            }
+    }
+
+    # Publish is a flat folder for the asset
+    SHOT_ASSET_PUBLISH_STRUCTURE = {
+        shot_asset_name: {}
+    }
+
+    # Create the Working directories
+    # Path: prod/sequences/<shot_name>/working/<asset_name>/export
+    working_path = shot_base_path / shot_name / "working"
+    working_path.mkdir(parents=True, exist_ok=True)
+    create_paths(working_path, SHOT_ASSET_WORKING_STRUCTURE)
+
+    # Create the Publish directories
+    # Path: prod/sequences/<shot_name>/publish/<asset_name>
+    publish_path = shot_base_path / shot_name / "publish"
+    publish_path.mkdir(parents=True, exist_ok=True)
+    create_paths(publish_path, SHOT_ASSET_PUBLISH_STRUCTURE)
+
 
 
 def find_highest_version_file(export_path: Path, asset_name: str, department: str, file_extension: None,

@@ -1,0 +1,68 @@
+prod/
+    assets/
+        publish/
+            char/
+                lion/
+                    assembly/
+                        lion_assembly.usd
+                    geo/
+                        lion_geo.usd
+                    rig/
+                        lion_rig.mb
+            prop/
+                stone/
+                    assembly/
+                    geo/
+            set/
+                forest/
+                    geo/
+        working/
+            char/
+                lion/
+                    assembly/
+                        export/
+                            lion_assembly_v001_sg.usd
+                        lion_assembly_v001_sg.hip
+                    geo/
+                        export/
+                            lion_geo_v001_sg.usd
+                        lion_geo_v001_sg.ma
+                    rig/
+                        export/
+                            lion_rig_v001_sg.mb
+                            lion_rig_v002_sg.mb
+                    tex/
+                        export/
+                            lion_v001_baseColor_sg.1001.png
+                            lion_v001_roughness_sg.1001.png
+                        lion_v001_am.spp
+                        lion_v002_am.spp
+
+    sequences/
+        seq_010_shot_0010
+        seq_040_shot_0250
+            /publish
+                /light
+                /anim
+                /fx
+                /charfx
+                /camera
+            /working
+                /light
+                    /export
+                /anim
+                    /export
+                /fx
+                    /export
+                /charfx
+                    /export
+                /camera
+                    /export
+        seq_010_shot_0020
+        seq_010_shot_0030
+        seq_020_shot_0010
+
+
+
+
+<asset_name>_<department>_<version#>_<initials>.<ext>

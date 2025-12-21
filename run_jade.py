@@ -1,8 +1,5 @@
 #put this in command line and import all the .py 
 
-import os
-import sys
-import jade_api
 from jade_api import *
 
 if __name__ == "__main__":
@@ -11,7 +8,6 @@ if __name__ == "__main__":
     print("System OS:", user.system_os)
     print("Show Name:", user.show_name)
     print("Collab Path:", user.collab_path)
-    print("Show Database:", user.show_database)
     create_show(user)
 
 

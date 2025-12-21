@@ -14,8 +14,9 @@ class LocalUser:
         self.collab_path = os.environ.get("JADE_COLLAB_BASE_DIR")
         #Set environment variable in .json, otherwise, hardcode path here:
         #self.collab_path = r"I-Drive/Savannah/CollaborativeSpace/stonelions"
-        self.show_database = os.environ.get("JADE_SHOW_DATABASE")
-        self.show_asset = os.environ.get("JADE_ASSET_DATABASE")
         self.farm_path = os.environ.get("JADE_FARM")
-        self.show_contributors = os.environ.get("JADE_SHOW_CONTRIBUTORS")
-        self.sftp_host = os.environ.get("SFTP_HOST")
+        #self.sftp_host = os.environ.get("SFTP_HOST")
+        #set environment variable in .json, otherwise, hardcode sftp host here:
+        self.sftp_host = "myfile.scad.edu"
+        # base folder path: \I - Drive\Savannah\CollaborativeSpace\stonelions
+
