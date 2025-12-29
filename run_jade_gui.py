@@ -138,7 +138,7 @@ class NewAssetForm(QWidget):
         # Asset Name Input
         layout.addWidget(QLabel("Asset Name"))
         self.asset_name_input = QLineEdit()
-        self.asset_name_input.setPlaceholderText("e.g., lion, stone, forest")
+        self.asset_name_input.setPlaceholderText("e.g., lion, stone")
         layout.addWidget(self.asset_name_input)
 
         # Create Button
@@ -227,7 +227,7 @@ class CreateShotAssetForm(QWidget):
         # 2. Shot Asset Name Input
         layout.addWidget(QLabel("Shot Asset Name"))
         self.asset_name_input = QLineEdit()
-        self.asset_name_input.setPlaceholderText("e.g., hero_rock, broken_pillar")
+        self.asset_name_input.setPlaceholderText("e.g., emCharFx, plantSim")
         layout.addWidget(self.asset_name_input)
 
         # 3. Create Button
@@ -397,11 +397,11 @@ class PublishAssetForm(QWidget):
                 (".mtl.usdc", ".mtl.usdc", "file"),
                 (".payload.usdc", ".payload.usdc", "file"),
                 (".usd", ".usd", "file"),
-                (None, ".textures", "folder")
+                (None, "textures", "folder")
             ],
             "tex": [
                 (".png", ".png", "file"),
-                (None, ".textures", "folder")
+                (None, "textures", "folder")
             ]
         }
 
@@ -456,18 +456,21 @@ class PublishAssetForm(QWidget):
 
             # 4. Special Case: ASSEMBLY Department (Folder Logic)
             elif department == "assembly":
-                highest_source_folder = find_highest_version_file(
-                    source_dir, identifier_name, department, None, is_folder_search=True
-                )
-                if highest_source_folder:
-                    source_file_details.append(highest_source_folder.name)
-                    dest_textures_path = destination_dir / ".textures"
-
-                    if dest_textures_path.exists():
-                        shutil.rmtree(dest_textures_path)
-
-                    shutil.copytree(highest_source_folder, dest_textures_path)
-                    files_published.append(f"Assembly Folder: .textures")
+                print("hi")
+                # source_textures_folder = source_dir / "textures"
+                #
+                # if source_textures_folder.exists() and source_textures_folder.is_dir():
+                #     # Destination path: .../publish/assembly/textures
+                #     dest_textures_path = destination_dir / "textures"
+                #
+                #     # Remove existing textures in publish to ensure a clean copy
+                #     if dest_textures_path.exists():
+                #         shutil.rmtree(dest_textures_path)
+                #
+                #     # Copy the folder directly
+                #     shutil.copytree(source_textures_folder, dest_textures_path)
+                #     files_published.append("Folder: textures")
+                #     source_file_details.append("textures")
 
             # 5. Standard Publishing Loop (Files)
             for source_ext, publish_ext, item_type in target_extensions:
@@ -490,7 +493,7 @@ class PublishAssetForm(QWidget):
 
             # 6. Success and Logging
             if files_published:
-                self.main_window.show_message(f"Published {source_file_details} to {new_file_name}", "success")
+                self.main_window.show_message(f"Published {source_file_details}", "success")
                 self.main_window.directory_viewer.refresh_tree()
                 log_action(
                     base_path=base_path,
@@ -647,7 +650,7 @@ class CreateShotForm(QWidget):
         # Shot Input
         layout.addWidget(QLabel("Shot #"))
         self.shot_input = QLineEdit()
-        self.shot_input.setPlaceholderText("Enter Shot #)")
+        self.shot_input.setPlaceholderText("Enter Shot #")
         layout.addWidget(self.shot_input)
 
         # Create Button
