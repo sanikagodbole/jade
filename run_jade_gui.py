@@ -4,8 +4,6 @@ from typing import List, Optional
 import shutil
 import re
 from jade_api.activity import log_action
-from jade_api.remoteSetup import sftp_connect
-
 
 from PyQt6.QtWidgets import (
     QApplication, QMainWindow, QWidget, QVBoxLayout, QHBoxLayout,
@@ -22,17 +20,15 @@ from jade_api.create import create_new_asset, create_new_shot, find_highest_vers
 
 # ======================== UTILITY FUNCTIONS ========================
 def get_asset_types() -> List[str]:
-    """Return available asset types"""
     return ["Character", "Prop", "Set"]
 
 
 def get_asset_names(base_path: Path, asset_type: str) -> List[str]:
-    """Get unique asset names for a given asset type from both publish and working dirs"""
     if not base_path.exists():
         return []
 
     asset_names = set()
-    # (base_path / "prod" / "asset" / mode / asset_type_key / asset_name)
+    # base_path / "prod" / "asset" / mode / asset_type_key / asset_name
     asset_type_key_map = {"Character": "char", "Prop": "prop", "Set": "set"}
     asset_type_key = asset_type_key_map.get(asset_type)
 
@@ -50,48 +46,42 @@ def get_asset_names(base_path: Path, asset_type: str) -> List[str]:
 
 
 def get_shot_names(base_path: Path) -> List[str]:
-    """Get unique shot folder names from the sequences directory"""
     sequences_dir = base_path / "prod" / "sequences"
     if not sequences_dir.exists():
         return []
 
-    # Looks for folders starting with 'seq_' (e.g., seq_010_shot_0010)
-    shot_names = [item.name for item in sequences_dir.iterdir() if item.is_dir() and item.name.startswith("seq_")]
+    shot_names = [item.name for item in sequences_dir.iterdir() if item.is_dir()]
     return sorted(shot_names)
 
 
 def get_shot_departments(base_path: Path, shot_name: str) -> List[str]:
     """Get all department folder names from a specific shot's working directory."""
-    # Construct the path to the working directory for the specific shot
+    # constructs working directory path
     working_dir = base_path / "prod" / "sequences" / shot_name / "working"
 
     if not working_dir.exists():
         return []
 
-    # Return names of all sub-directories inside 'working', ignoring hidden folders
+    # names of the subdirectories get listed
     depts = [item.name for item in working_dir.iterdir() if item.is_dir() and not item.name.startswith('.')]
     return sorted(depts)
 
 
 def build_directory_tree(path: Path, prefix: str = "") -> str:
-    #  build tree visualization
+    #  builds tree visualization
     tree = ""
     try:
-        # Sort items: directories first, then files, both alphabetically
         items = sorted(path.iterdir(), key=lambda x: (not x.is_dir(), x.name.lower()))
     except (PermissionError, NotADirectoryError):
         return tree
     except FileNotFoundError:
         return tree
 
-    # Filter out hidden files/dirs
     items = [item for item in items if not item.name.startswith('.')]
-
-    # Separate directories and files
     folders = [item for item in items if item.is_dir()]
     files = [item for item in items if item.is_file()]
 
-    # Render folders
+    #lists folders
     for i, folder in enumerate(folders):
         is_last_folder = (i == len(folders) - 1) and len(files) == 0
         connector = "└── " if is_last_folder else "├── "
@@ -100,12 +90,11 @@ def build_directory_tree(path: Path, prefix: str = "") -> str:
         extension = "    " if is_last_folder else "│   "
         tree += build_directory_tree(folder, prefix + extension)
 
-    # Render files
+    # lists files
     for i, file in enumerate(files):
         is_last = i == len(files) - 1
         connector = "└── " if is_last else "├── "
         tree += f"{prefix}{connector}📄 {file.name}\n"
-
     return tree
 
 
@@ -129,19 +118,17 @@ class NewAssetForm(QWidget):
         header.setFont(QFont('Consolas', 15))
         layout.addWidget(header)
 
-        # Asset Type Select
+        #layout & buttons
         layout.addWidget(QLabel("Asset Type"))
         self.asset_type_combo = QComboBox()
         self.asset_type_combo.addItems(get_asset_types())
         layout.addWidget(self.asset_type_combo)
 
-        # Asset Name Input
         layout.addWidget(QLabel("Asset Name"))
         self.asset_name_input = QLineEdit()
         self.asset_name_input.setPlaceholderText("e.g., lion, stone")
         layout.addWidget(self.asset_name_input)
 
-        # Create Button
         self.create_button = QPushButton("Create Asset")
         self.create_button.setFont(QFont('Consolas', 10))
         self.create_button.setStyleSheet("""
@@ -177,7 +164,6 @@ class NewAssetForm(QWidget):
         asset_type_key = asset_type_map.get(asset_type)
 
         try:
-            # The base path for asset creation is assumed to be 'prod/asset'
             create_new_asset(asset_name, asset_type_key, base_path / "prod" / "asset")
 
             self.main_window.show_message(
@@ -253,7 +239,6 @@ class CreateShotAssetForm(QWidget):
     def refresh_shots(self):
         """Populate the shot dropdown using the existing utility."""
         base_path = self.main_window.base_path
-        # Reusing the existing utility function from your code
         names = get_shot_names(base_path) if base_path else []
         self.shot_name_combo.clear()
         if names:
@@ -267,7 +252,6 @@ class CreateShotAssetForm(QWidget):
         """Execute folder creation using shot_asset_name."""
         base_path = self.main_window.base_path
         shot_name = self.shot_name_combo.currentText()
-        # Internal variable renamed for clarity
         shot_asset_name = self.asset_name_input.text().strip()
 
         if not base_path or shot_name == "No shots found":
@@ -279,7 +263,6 @@ class CreateShotAssetForm(QWidget):
             return
 
         try:
-            # Call the updated function with the new argument name
             create_new_shot_asset(
                 shot_name=shot_name,
                 shot_asset_name=shot_asset_name,
@@ -307,7 +290,6 @@ class PublishAssetForm(QWidget):
         super().__init__()
         self.main_window = main_window
         self.setObjectName("publishAssetForm")
-        # self.setStyleSheet(".ContainerBox {background-color: #fffff0;}") # Light yellow tint
         self.init_ui()
 
     def init_ui(self):
@@ -329,7 +311,6 @@ class PublishAssetForm(QWidget):
         # Department Select (Now the primary filter)
         layout.addWidget(QLabel("Department"))
         self.department_combo = QComboBox()
-        # Unified list of asset and shot departments
         self.department_combo.addItems(["geo", "rig", "tex", "assembly"])
         self.department_combo.currentIndexChanged.connect(self.update_asset_names)
         layout.addWidget(self.department_combo)
@@ -355,7 +336,6 @@ class PublishAssetForm(QWidget):
         """)
 
         self.publish_button.clicked.connect(self.handle_publish_asset)
-
         layout.addWidget(self.publish_button)
 
         layout.addStretch(1)
@@ -384,7 +364,6 @@ class PublishAssetForm(QWidget):
         asset_type = self.asset_type_combo.currentText()
         department = self.department_combo.currentText().lower()
 
-        # Validation
         if asset_name == "No assets found" or not base_path:
             QMessageBox.warning(self, "Warning", "Please ensure a valid selection and base path.")
             return
@@ -411,7 +390,6 @@ class PublishAssetForm(QWidget):
             return
 
         try:
-            # Simplified Asset-Only Path Logic
             asset_type_map = {"Character": "char", "Prop": "prop", "Set": "set"}
             asset_type_key = asset_type_map.get(asset_type)
 
@@ -423,7 +401,7 @@ class PublishAssetForm(QWidget):
             files_published = []
             source_file_details = []
 
-            # 3. Special Case: TEX Department
+            # 3. TEX Department
             if department == "tex":
                 highest_source_folder = find_highest_version_file(
                     source_dir, identifier_name, department, None, is_folder_search=True
@@ -454,25 +432,24 @@ class PublishAssetForm(QWidget):
                             items_copied_count += 1
                     files_published.append(f"TEX Folder: {items_copied_count} items")
 
-            # 4. Special Case: ASSEMBLY Department (Folder Logic)
+            # 4. ASSEMBLY Department
             elif department == "assembly":
                 print("hi")
-                # source_textures_folder = source_dir / "textures"
-                #
-                # if source_textures_folder.exists() and source_textures_folder.is_dir():
-                #     # Destination path: .../publish/assembly/textures
-                #     dest_textures_path = destination_dir / "textures"
-                #
-                #     # Remove existing textures in publish to ensure a clean copy
-                #     if dest_textures_path.exists():
-                #         shutil.rmtree(dest_textures_path)
-                #
-                #     # Copy the folder directly
-                #     shutil.copytree(source_textures_folder, dest_textures_path)
-                #     files_published.append("Folder: textures")
-                #     source_file_details.append("textures")
+                source_textures_folder = source_dir / "textures"
 
-            # 5. Standard Publishing Loop (Files)
+                if source_textures_folder.exists() and source_textures_folder.is_dir():
+                    dest_textures_path = destination_dir / "textures"
+
+                    # Remove existing textures in publish to ensure a clean copy
+                    if dest_textures_path.exists():
+                        shutil.rmtree(dest_textures_path)
+
+                    # Copy the folder directly
+                    shutil.copytree(source_textures_folder, dest_textures_path)
+                    files_published.append("Folder: textures")
+                    source_file_details.append("textures")
+
+            # 5. File publishing
             for source_ext, publish_ext, item_type in target_extensions:
                 if item_type == "folder":
                     continue
@@ -552,7 +529,6 @@ class PublishShotForm(QWidget):
         self.refresh_shots()
 
     def update_departments(self):
-        """Dynamic refresh: gets departments based on the currently selected shot."""
         base_path = self.main_window.base_path
         shot_name = self.shot_name_combo.currentText()
 
@@ -560,7 +536,6 @@ class PublishShotForm(QWidget):
             self.department_combo.clear()
             return
 
-        # Fetch folders directly from the filesystem
         depts = get_shot_departments(base_path, shot_name)
 
         self.department_combo.clear()
@@ -588,19 +563,16 @@ class PublishShotForm(QWidget):
         department = self.department_combo.currentText().lower()
 
         try:
-            # SHOT PATHS: prod/sequences/<shot_name>/working/<dept>/export
             source_dir = base_path / "prod" / "sequences" / shot_name / "working" / department / "export"
             destination_dir = base_path / "prod" / "sequences" / shot_name / "publish" / department
 
-            # Identify highest version using your find_highest_version_file in create.py
-            # Extension is set to .usd as per your requirement
+            # Identify highest version using function in create.py
             highest_file = find_highest_version_file(source_dir, shot_name, department, ".usd")
 
             if not highest_file:
                 QMessageBox.warning(self, "Not Found", f"No versioned .usd files found in {source_dir}")
                 return
 
-            # Final name: seq_010_shot_0010_light.usd
             dest_file = destination_dir / f"{shot_name}_{department}.usd"
             destination_file = f"{shot_name}_{department}.usd"
             destination_dir.mkdir(parents=True, exist_ok=True)
@@ -623,13 +595,11 @@ class PublishShotForm(QWidget):
 
 
 class CreateShotForm(QWidget):
-    """Widget for creating a new shot."""
 
     def __init__(self, main_window):
         super().__init__()
         self.main_window = main_window
         self.setObjectName("createShotForm")
-        # self.setStyleSheet(".ContainerBox {background-color: #f0ffff;}") # Light cyan tint
         self.init_ui()
 
     def init_ui(self):
@@ -694,13 +664,10 @@ class CreateShotForm(QWidget):
             return
 
         try:
-            # The base path for shot creation is assumed to be 'prod/sequences'
             create_new_shot(sequence_num, shot_num, base_path / "prod" / "sequences")
-
-            # Format shot name for display
             seq_formatted = str(int(round(sequence_num * 10))).zfill(3)
             shot_formatted = str(int(round(shot_num * 10))).zfill(4)
-            shot_name = f"seq_{seq_formatted}_shot_{shot_formatted}"
+            shot_name = f"{seq_formatted}_{shot_formatted}"
 
             self.main_window.show_message(
                 f"Shot '{shot_name}' created successfully",
@@ -727,7 +694,7 @@ class CreateShotForm(QWidget):
 
 
 class DirectoryViewer(QWidget):
-    """Widget for displaying the directory tree using QTreeView and QFileSystemModel."""
+    # tree visualization
 
     def __init__(self, main_window):
         super().__init__()
@@ -755,22 +722,19 @@ class DirectoryViewer(QWidget):
         self.tree_display.setUniformRowHeights(True)
         self.tree_display.setMinimumSize(400, 300)  # Ensure it has space
 
-        # Hide unnecessary columns (Size, Type, Date Modified)
         for i in range(1, self.model.columnCount()):
             self.tree_display.hideColumn(i)
 
         layout.addWidget(self.tree_display)
 
-        # Initial refresh
+        # refresh tree when it is updated
         self.refresh_tree()
 
     def refresh_tree(self):
         base_path = self.main_window.base_path
 
         if not base_path or not base_path.exists():
-            # Clear or show a message if the path is invalid
             self.tree_display.setRootIndex(QModelIndex())  # Clear the view
-            # You might need a separate status label if you want a text warning
             return
 
         # Set the root of the view to the base_path
@@ -778,19 +742,14 @@ class DirectoryViewer(QWidget):
 
         if root_index.isValid():
             self.tree_display.setRootIndex(root_index)
-            # Ensure the first level is expanded for visibility (optional)
             self.tree_display.expand(root_index)
-
-            # Auto-size the Name column to fit the path name
             self.tree_display.header().resizeSection(0, 300)
         else:
-            # Handle case where the path exists but isn't valid for QFileSystemModel
-            # (less common, but good practice)
             self.tree_display.setRootIndex(QModelIndex())
 
 
 class TextDirectoryViewer(QWidget):
-    """Widget for displaying the directory tree."""
+    # tree visualization widgey
 
     def __init__(self, main_window):
         super().__init__()
@@ -831,18 +790,17 @@ class TextDirectoryViewer(QWidget):
 # ======================== MAIN WINDOW ========================
 
 class JADEGui(QMainWindow):
-    """Main application window, replacing the Streamlit layout."""
 
     def __init__(self):
         super().__init__()
         self.publish_mode = "local"
         self.base_path: Optional[Path] = None
-        # set default path to I-Drive
+        # set default path (I:\Savannah\CollaborativeSpace/stonelions)
+        # r"D:\SANIKA\code\jadeTEST"
         self.default_path = Path(r"D:\SANIKA\code\jadeTEST")
         self.setWindowTitle("JADE - Asset Organization & Delivery Pipeline")
         self.setFont(QFont('Consolas', 10))
         self.setGeometry(100, 100, 1200, 800)
-        # self.setStyleSheet(QSS_THEME)
         self.selected_action = "publish_asset"  # "new_asset"
 
         self.central_widget = QWidget()
@@ -927,16 +885,14 @@ class JADEGui(QMainWindow):
     def show_message(self, text, type_name, delay=60000):
         """Display a temporary success/info message."""
         if type_name == "success":
-            color = "#1a8449"  # Darker green for success
+            color = "#1a8449"  #green
         elif type_name == "info":
-            color = "#17a2b8"  # Standard info blue
-        else:  # error/warning if implemented later
+            color = "#17a2b8"  #blue
+        else:
             color = "#dc3545"
 
         self.message_label.setText(text)
-        # QTimer to clear the message after a delay (in milliseconds)
         from PyQt6.QtCore import QTimer
-        # QTimer.singleShot(delay, lambda: self.message_label.setStyleSheet("min-height: 20px;"))
         QTimer.singleShot(delay, lambda: self.message_label.setText(""))
 
     def _render_base_folder_input(self):
@@ -991,7 +947,6 @@ class JADEGui(QMainWindow):
             self.path_status_label.setText("Path OK")
             self.path_status_label.setStyleSheet("color: green; font-weight: bold;")
 
-            # Re-enable main content if it was disabled
             self.directory_viewer.refresh_tree()
             self.publish_asset_form.update_asset_names()
         else:
@@ -1012,9 +967,7 @@ class JADEGui(QMainWindow):
         header.setFont(QFont('Consolas', 15))
         layout.addWidget(header)
 
-        # The "Active" Green Style
         STYLE_ACTIVE = "background-color: #339664; color: white; padding: 5px 10px; min-height: 10px; border-radius: 10px; font-weight: bold;"
-        # The "Inactive" Grey Style
         STYLE_INACTIVE = "background-color: #e0e0e0; color: black; padding: 5px 10px; min-height: 10px; border-radius: 10px;"
 
         self.publish_btn = QPushButton("Publish Asset")
@@ -1044,8 +997,6 @@ class JADEGui(QMainWindow):
         self.create_shot_asset_btn.clicked.connect(lambda: self._set_action("create_shot_asset"))
         self.create_shot_btn.clicked.connect(lambda: self._set_action("create_shot"))
 
-
-
         layout.addWidget(self.publish_btn)
         layout.addSpacing(10)
         layout.addWidget(self.publish_shot_btn)
@@ -1064,17 +1015,15 @@ class JADEGui(QMainWindow):
         layout.addWidget(self.create_shot_btn)
 
 
-        layout.addStretch(1)  # Push content to the top
+        layout.addStretch(1)
 
         return container
 
     def _set_action(self, action_name):
-        """Set the current action and update the middle column with button highlighting."""
+        # highlighting the active action button
         self.selected_action = action_name
 
-        # The "Active" Green Style
         STYLE_ACTIVE = "background-color: #339664; color: white; padding: 5px 10px; min-height: 10px; border-radius: 10px; font-weight: bold;"
-        # The "Inactive" Grey Style
         STYLE_INACTIVE = "background-color: #e0e0e0; color: black; padding: 5px 10px; min-height: 10px; border-radius: 10px;"
 
         # 1. Create a list of all your action buttons
@@ -1107,8 +1056,7 @@ class JADEGui(QMainWindow):
 
 
     def _update_middle_column(self):
-        """Switch the form displayed in the middle column."""
-        # Clear existing widgets in the forms container
+        # middle collumn switches according to which button is selected
         for i in reversed(range(self.forms_container.count())):
             widget_to_remove = self.forms_container.itemAt(i).widget()
             if widget_to_remove:
@@ -1132,8 +1080,6 @@ class JADEGui(QMainWindow):
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)
-
-    # Initialize the main UI
     window = JADEGui()
     window.show()
 

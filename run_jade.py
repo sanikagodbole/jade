@@ -9,5 +9,3 @@ if __name__ == "__main__":
     print("Show Name:", user.show_name)
     print("Collab Path:", user.collab_path)
     create_show(user)
-
-

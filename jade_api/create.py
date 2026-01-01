@@ -1,4 +1,4 @@
-#create folder structure
+#creates folder structures & finds highest version numbers
 
 from pathlib import Path
 from jade_api.info import LocalUser
@@ -24,7 +24,7 @@ DIR_CONFIG = {
     },
     'pre': {},
     'post': {},
-    '.tools': {},
+    'tools': {},
 }
 
 
@@ -48,13 +48,10 @@ def create_new_asset(asset_name: str, asset_type: str, asset_base_path: Path):
     """
     Create a new asset directory structure for char, prop, or set.
     
-    Args:
+    Arguments:
         asset_name: Name of the asset (e.g., "lion", "stone", "forest")
         asset_type: Type of asset ("char", "prop", or "set")
         asset_base_path: Path to the assets folder (prod/assets)
-    
-    Raises:
-        ValueError: If asset_type is not "char", "prop", or "set"
     """
     if asset_type not in ["char", "prop", "set"]:
         raise ValueError(f"asset_type must be 'char', 'prop', or 'set', got '{asset_type}'")
@@ -74,7 +71,6 @@ def create_new_asset(asset_name: str, asset_type: str, asset_base_path: Path):
         },
         "set": {
             "geo": {"export": {}},
-            "tex": {"export": {}},
         },
     }
 
@@ -92,17 +88,12 @@ def create_new_asset(asset_name: str, asset_type: str, asset_base_path: Path):
         },
         "set": {
             "geo": {},
-            "tex": {},
         },
     }
-    
-    # Shot structures are handled separately by create_new_shot()
 
-    # Get the structure for this asset type
     asset_working_structure = ASSET_WORKING_STRUCTURES[asset_type]
     asset_publish_structure = ASSET_PUBLISH_STRUCTURES[asset_type]
-    # shot structures not used here
-    
+
     # Create publish and working directories
     for mode in ["working"]:
         asset_path = asset_base_path / mode / asset_type / asset_name
@@ -126,19 +117,17 @@ def create_new_shot(sequence_num: float, shot_num: float, shot_base_path: Path):
         shot_num: Shot number (e.g., 1 for shot_0010, 25 for shot_0250)
         shot_base_path: Path to the sequences folder (prod/sequences)
     """
-    # Format sequence and shot numbers with decimal slots (multiply by 10)
-    # This reserves the last digit for decimal inserts (e.g., seq 1 -> 010, shot 1 -> 0010)
-    seq_formatted = str(int(round(sequence_num * 10))).zfill(3)  # e.g., 1 -> "010", 4 -> "040", 1.5 -> "015"
-    shot_formatted = str(int(round(shot_num * 10))).zfill(4)     # e.g., 1 -> "0010", 25 -> "0250", 1.5 -> "0015"
-    shot_name = f"seq_{seq_formatted}_shot_{shot_formatted}"
+    # formatting create new shot to naming convention
+    seq_formatted = str(int(round(sequence_num * 10))).zfill(3)
+    shot_formatted = str(int(round(shot_num * 10))).zfill(4)
+    shot_name = f"{seq_formatted}_{shot_formatted}"
     
-    # Define shot folder structures
+    # defining shot folder structures
     SHOT_WORKING_STRUCTURE = {
         "light": {"export": {}},
         "anim": {"export": {}},
         "fx": {"export": {}},
         "charfx": {"export": {}},
-        "set": {"export": {}},
         "camera": {"export": {}},
     }
     
@@ -147,17 +136,14 @@ def create_new_shot(sequence_num: float, shot_num: float, shot_base_path: Path):
         "anim": {},
         "fx": {},
         "charfx": {},
-        "set": {},
         "camera": {},
     }
-    
-    # Create working directory structure (prod/sequences/working/seq_xxx_shot_xxx/...)
+
     for mode in ["working"]:
         shot_path = shot_base_path / shot_name / mode
         shot_path.mkdir(parents=True, exist_ok=True)
         create_paths(shot_path, SHOT_WORKING_STRUCTURE)
     
-    # Create publish directory structure (prod/sequences/publish/seq_xxx_shot_xxx/...)
     for mode in ["publish"]:
         shot_path = shot_base_path / shot_name / mode
         shot_path.mkdir(parents=True, exist_ok=True)
@@ -174,27 +160,20 @@ def create_new_shot_asset(shot_name: str, shot_asset_name: str, shot_base_path: 
         shot_base_path: Path to the sequences folder (prod/sequences)
     """
 
-    # Define the specific internal structures for shot-based assets
-    # Working includes an 'export' folder
     SHOT_ASSET_WORKING_STRUCTURE = {
         shot_asset_name: {
                 "export": {}
             }
     }
 
-    # Publish is a flat folder for the asset
     SHOT_ASSET_PUBLISH_STRUCTURE = {
         shot_asset_name: {}
     }
 
-    # Create the Working directories
-    # Path: prod/sequences/<shot_name>/working/<asset_name>/export
     working_path = shot_base_path / shot_name / "working"
     working_path.mkdir(parents=True, exist_ok=True)
     create_paths(working_path, SHOT_ASSET_WORKING_STRUCTURE)
 
-    # Create the Publish directories
-    # Path: prod/sequences/<shot_name>/publish/<asset_name>
     publish_path = shot_base_path / shot_name / "publish"
     publish_path.mkdir(parents=True, exist_ok=True)
     create_paths(publish_path, SHOT_ASSET_PUBLISH_STRUCTURE)
@@ -206,9 +185,6 @@ def find_highest_version_file(export_path: Path, asset_name: str, department: st
     """
     Identifies the file or folder with the highest numerical version in the given directory.
     Pattern: <asset_name>_<department>_v<numerical_version>_<user_initials>.<file_extension>
-
-    The file_extension should include the leading dot, e.g., '.usd'.
-    If is_folder_search is True, file_extension is ignored and we look for folders.
     """
     if not export_path.is_dir():
         return None
@@ -225,20 +201,17 @@ def find_highest_version_file(export_path: Path, asset_name: str, department: st
 
     for item_path in export_path.iterdir():
 
-        # Check if the item type matches what we are looking for
         if (is_folder_search and item_path.is_dir()) or (not is_folder_search and item_path.is_file()):
 
             item_name = item_path.name
-
-            # Check for prefix
+            # if the file starts with the correct prefix [name of folder]
             if item_name.startswith(name_prefix):
 
-                # Check for correct extension suffix (only for files)
                 if not is_folder_search and not item_name.endswith(ext_suffix):
                     continue
 
                 try:
-                    # The regex captures the version number (digits between 'v' and the next '_')
+                    #finds verion number based on v__
                     match = re.search(f"{re.escape(name_prefix)}(\\d+)_", item_name)
                     if match:
                         version = int(match.group(1))
@@ -249,6 +222,6 @@ def find_highest_version_file(export_path: Path, asset_name: str, department: st
     if not versioned_items:
         return None
 
-    # Find the item path associated with the maximum version number
+    # find and return highest version number
     highest_version_item = max(versioned_items, key=lambda x: x[0])[1]
     return highest_version_item
