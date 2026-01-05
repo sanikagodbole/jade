@@ -14,4 +14,5 @@ class LocalUser:
         self.collab_path = os.environ.get("JADE_COLLAB_BASE_DIR")
         #Set environment variable in .json, otherwise, hardcode path here:
         self.collab_path = r"I:\Savannah\CollaborativeSpace/stonelions"
+        #self.collab_path = r"D:\SANIKA\code\jadeTEST"
         self.farm_path = os.environ.get("JADE_FARM")

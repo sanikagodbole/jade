@@ -562,29 +562,7 @@ class PublishShotForm(QWidget):
         shot_name = self.shot_name_combo.currentText()
         department = self.department_combo.currentText().lower()
 
-        if department == "playblast":
-            source_dir = base_path / "prod" / "sequences" / shot_name / "working" / department / "export"
-            destination_dir = base_path / "post" / "publish" / shot_name / "comp"
-            highest_file = find_highest_version_file(source_dir, shot_name, department, ".mp4")
-            dest_file = destination_dir / f"{shot_name}.mp4"
-            destination_file = f"{shot_name}.mp4"
-
-            destination_dir.mkdir(parents=True, exist_ok=True)
-            if dest_file.exists():
-                dest_file.unlink()
-
-            shutil.copy2(highest_file, dest_file)
-
-            self.main_window.show_message(f"Published {highest_file.name} to {destination_file}", "success")
-            self.main_window.directory_viewer.refresh_tree()
-
-            log_action(
-                base_path=base_path,
-                action="Publish_Shot",
-                details=f"{department.upper()} / {shot_name} | Source: {highest_file.name}"
-            )
-
-        else:
+        try:
             source_dir = base_path / "prod" / "sequences" / shot_name / "working" / department / "export"
             destination_dir = base_path / "prod" / "sequences" / shot_name / "publish" / department
 
@@ -597,7 +575,6 @@ class PublishShotForm(QWidget):
 
             dest_file = destination_dir / f"{shot_name}_{department}.usd"
             destination_file = f"{shot_name}_{department}.usd"
-
             destination_dir.mkdir(parents=True, exist_ok=True)
             if dest_file.exists():
                 dest_file.unlink()
@@ -613,8 +590,8 @@ class PublishShotForm(QWidget):
                 details=f"{department.upper()} / {shot_name} | Source: {highest_file.name}"
             )
 
-        # except Exception as e:
-        #     QMessageBox.critical(self, "Error", f"Failed to publish shot: {str(e)}")
+        except Exception as e:
+            QMessageBox.critical(self, "Error", f"Failed to publish shot: {str(e)}")
 
 
 class CreateShotForm(QWidget):
@@ -820,7 +797,7 @@ class JADEGui(QMainWindow):
         self.base_path: Optional[Path] = None
         # set default path (I:\Savannah\CollaborativeSpace/stonelions)
         # r"D:\SANIKA\code\jadeTEST"
-        self.default_path = Path(r"I:\Savannah\CollaborativeSpace/stonelions")
+        self.default_path = Path(r"D:\SANIKA\code\jadeTEST")
         self.setWindowTitle("JADE - Asset Organization & Delivery Pipeline")
         self.setFont(QFont('Consolas', 10))
         self.setGeometry(100, 100, 1200, 800)

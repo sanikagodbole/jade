@@ -23,7 +23,11 @@ DIR_CONFIG = {
         'sequences': {}
     },
     'pre': {},
-    'post': {},
+    'post': {
+        'final':{},
+        'publish': {},
+        'working': {},
+    },
     'tools': {},
 }
 
@@ -129,6 +133,7 @@ def create_new_shot(sequence_num: float, shot_num: float, shot_base_path: Path):
         "fx": {"export": {}},
         "charfx": {"export": {}},
         "camera": {"export": {}},
+        "playblast": {"export": {}},
     }
     
     SHOT_PUBLISH_STRUCTURE = {
@@ -137,17 +142,39 @@ def create_new_shot(sequence_num: float, shot_num: float, shot_base_path: Path):
         "fx": {},
         "charfx": {},
         "camera": {},
+        "playblast": {},
+    }
+
+    COMP_WORKING_STRUCTURE = {
+        "comp": {"export": {}},
+        "matte": {"export": {}},
+        "renders": {"export": {}},
+    }
+
+    COMP_PUBLISH_STRUCTURE = {
+        "comp": {},
+        "matte": {},
+        "renders": {},
     }
 
     for mode in ["working"]:
-        shot_path = shot_base_path / shot_name / mode
+        shot_path = shot_base_path / "prod" / "sequences" / shot_name / mode
         shot_path.mkdir(parents=True, exist_ok=True)
         create_paths(shot_path, SHOT_WORKING_STRUCTURE)
+
+        shot_path_comp = shot_base_path / "post" / mode / shot_name
+        shot_path_comp.mkdir(parents=True, exist_ok=True)
+        create_paths(shot_path_comp, COMP_WORKING_STRUCTURE)
+
     
     for mode in ["publish"]:
-        shot_path = shot_base_path / shot_name / mode
+        shot_path = shot_base_path / "prod" / "sequences" / shot_name / mode
         shot_path.mkdir(parents=True, exist_ok=True)
         create_paths(shot_path, SHOT_PUBLISH_STRUCTURE)
+
+        shot_path_comp = shot_base_path / "post" / mode / shot_name
+        shot_path_comp.mkdir(parents=True, exist_ok=True)
+        create_paths(shot_path_comp, COMP_PUBLISH_STRUCTURE)
 
 
 def create_new_shot_asset(shot_name: str, shot_asset_name: str, shot_base_path: Path):

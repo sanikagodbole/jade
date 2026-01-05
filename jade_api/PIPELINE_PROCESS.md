@@ -58,6 +58,8 @@ prod/
                     /export
                 /camera
                     /export
+                /playblast
+                    /export
         seq_010_shot_0020
         seq_010_shot_0030
         seq_020_shot_0010
