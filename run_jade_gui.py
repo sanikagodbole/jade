@@ -3,7 +3,23 @@ from pathlib import Path
 from typing import List, Optional
 import shutil
 import re
+from jade_api.info import LocalUser
 from jade_api.activity import log_action
+
+
+import subprocess
+def install_pyqt():
+    try:
+        subprocess.check_call([sys.executable, "-m", "pip", "install", "PyQt6"])
+        print("\nSuccess! PyQt6 has been installed.")
+    except Exception as e:
+        print(f"\nAn error occurred: {e}")
+    
+if __name__ == "__main__":
+    install_pyqt()
+
+
+
 
 from PyQt6.QtWidgets import (
     QApplication, QMainWindow, QWidget, QVBoxLayout, QHBoxLayout,
@@ -16,6 +32,8 @@ from PyQt6.QtGui import QFileSystemModel
 
 
 from jade_api.create import create_new_asset, create_new_shot, find_highest_version_file, create_new_shot_asset
+
+
 
 
 # ======================== UTILITY FUNCTIONS ========================
@@ -421,14 +439,14 @@ class PublishAssetForm(QWidget):
                         item_name = source_item_path.name
                         if source_item_path.is_file() and version_and_initials_pattern.search(item_name):
                             new_item_name = version_and_initials_pattern.sub('', item_name)
-                            shutil.copy2(source_item_path, destination_dir / new_item_name)
+                            shutil.copyfile(source_item_path, destination_dir / new_item_name)
                             items_copied_count += 1
                         else:
                             dest_item_path = destination_dir / item_name
                             if source_item_path.is_dir():
                                 shutil.copytree(source_item_path, dest_item_path)
                             else:
-                                shutil.copy2(source_item_path, dest_item_path)
+                                shutil.copyfile(source_item_path, dest_item_path)
                             items_copied_count += 1
                     files_published.append(f"TEX Folder: {items_copied_count} items")
 
@@ -465,7 +483,7 @@ class PublishAssetForm(QWidget):
                 if destination_file.exists():
                     destination_file.unlink()
 
-                shutil.copy2(highest_source_file, destination_file)
+                shutil.copyfile(highest_source_file, destination_file)
                 files_published.append(new_file_name)
 
             # 6. Success and Logging
@@ -573,7 +591,7 @@ class PublishShotForm(QWidget):
             if dest_file.exists():
                 dest_file.unlink()
 
-            shutil.copy2(highest_file, dest_file)
+            shutil.copyfile(highest_file, dest_file)
 
             self.main_window.show_message(f"Published {highest_file.name} to {destination_file}", "success")
             self.main_window.directory_viewer.refresh_tree()
@@ -602,7 +620,7 @@ class PublishShotForm(QWidget):
             if dest_file.exists():
                 dest_file.unlink()
 
-            shutil.copy2(highest_file, dest_file)
+            shutil.copyfile(highest_file, dest_file)
 
             self.main_window.show_message(f"Published {highest_file.name} to {destination_file}", "success")
             self.main_window.directory_viewer.refresh_tree()
@@ -613,8 +631,6 @@ class PublishShotForm(QWidget):
                 details=f"{department.upper()} / {shot_name} | Source: {highest_file.name}"
             )
 
-        # except Exception as e:
-        #     QMessageBox.critical(self, "Error", f"Failed to publish shot: {str(e)}")
 
 
 class CreateShotForm(QWidget):
@@ -816,15 +832,16 @@ class JADEGui(QMainWindow):
 
     def __init__(self):
         super().__init__()
+        self.user_info = LocalUser()
         self.publish_mode = "local"
         self.base_path: Optional[Path] = None
-        # set default path (I:\Savannah\CollaborativeSpace/stonelions)
+        self.default_path = Path(self.user_info.collab_path)
         # r"D:\SANIKA\code\jadeTEST"
-        self.default_path = Path(r"I:\Savannah\CollaborativeSpace/stonelions")
+        #self.default_path = Path(r"I:/Savannah/CollaborativeSpace/stonelions")
         self.setWindowTitle("JADE - Asset Organization & Delivery Pipeline")
         self.setFont(QFont('Consolas', 10))
         self.setGeometry(100, 100, 1200, 800)
-        self.selected_action = "publish_asset"  # "new_asset"
+        self.selected_action = "publish_asset" 
 
         self.central_widget = QWidget()
         self.setCentralWidget(self.central_widget)
