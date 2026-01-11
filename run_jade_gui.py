@@ -387,7 +387,11 @@ class PublishAssetForm(QWidget):
             return
 
         department_map = {
-            "geo": [(".usd", ".usd", "file")],
+            "geo": [
+                (".usd", ".usd", "file"),
+                (".fbx", ".fbx", "file"),
+                (".obj", ".obj", ".obj")
+            ],
             "rig": [(".ma", ".ma", "file")],
             "assembly": [
                 (".geo.usdc", ".geo.usdc", "file"),
@@ -426,7 +430,6 @@ class PublishAssetForm(QWidget):
                 )
                 if highest_source_folder:
                     source_file_details.append(highest_source_folder.name)
-                    # Clear destination
                     for item in destination_dir.iterdir():
                         if item.is_dir():
                             shutil.rmtree(item)
@@ -580,56 +583,68 @@ class PublishShotForm(QWidget):
         shot_name = self.shot_name_combo.currentText()
         department = self.department_combo.currentText().lower()
 
+        if not base_path or shot_name == "No shots found":
+            return
+
+        # THE MAP: Defines what to look for and what to rename it to
+        shot_department_map = {
+            "anim": [(".usd", ".usd", "file")],
+            "camera": [
+                (".usd", ".usd", "file"), 
+                (".fbx", ".fbx", "file"),
+                (".abc", ".abc", "file")
+            ],
+            "charfx": [(".usd", ".usd", "file")],
+            "fx": [(".usd", ".usd", "file")],
+            "light": [(".usd", ".usd", "file")],
+            "playblast": [(".mp4", ".mp4", "file")],
+            "default": [
+                (".usd", ".usd", "file"),
+                (".fbx", ".fbx", "file"),
+            ]
+        }
+
+        #target_configs = shot_department_map.get(department)
+        target_configs = shot_department_map[department] if department in shot_department_map else shot_department_map["default"]
+        if not target_configs:
+            QMessageBox.warning(self, "Warning", f"No publish logic for: {department}")
+            return
+
+        # Define directories
+        source_dir = base_path / "prod" / "sequences" / shot_name / "working" / department / "export"
         if department == "playblast":
-            source_dir = base_path / "prod" / "sequences" / shot_name / "working" / department / "export"
             destination_dir = base_path / "post" / "publish" / shot_name / "comp"
-            highest_file = find_highest_version_file(source_dir, shot_name, department, ".mp4")
-            dest_file = destination_dir / f"{shot_name}.mp4"
-            destination_file = f"{shot_name}.mp4"
-
-            destination_dir.mkdir(parents=True, exist_ok=True)
-            if dest_file.exists():
-                dest_file.unlink()
-
-            shutil.copyfile(highest_file, dest_file)
-
-            self.main_window.show_message(f"Published {highest_file.name} to {destination_file}", "success")
-            self.main_window.directory_viewer.refresh_tree()
-
-            log_action(
-                base_path=base_path,
-                action="Publish_Shot",
-                details=f"{department.upper()} / {shot_name} | Source: {highest_file.name}"
-            )
-
         else:
-            source_dir = base_path / "prod" / "sequences" / shot_name / "working" / department / "export"
             destination_dir = base_path / "prod" / "sequences" / shot_name / "publish" / department
 
-            # Identify highest version using function in create.py
-            highest_file = find_highest_version_file(source_dir, shot_name, department, ".usd")
+        destination_dir.mkdir(parents=True, exist_ok=True)
+        files_published = []
 
-            if not highest_file:
-                QMessageBox.warning(self, "Not Found", f"No versioned .usd files found in {source_dir}")
-                return
+        try:
+            # Loop through the map to handle multiple extensions (like for Camera)
+            for source_ext, publish_ext, item_type in target_configs:
+                highest_file = find_highest_version_file(source_dir, shot_name, department, source_ext)
+                
+                if highest_file:
+                    # Custom naming for playblasts vs standard departments
+                    new_file_name = f"{shot_name}{publish_ext}" if department == "playblast" else f"{shot_name}_{department}{publish_ext}"
+                    dest_file = destination_dir / new_file_name
 
-            dest_file = destination_dir / f"{shot_name}_{department}.usd"
-            destination_file = f"{shot_name}_{department}.usd"
+                    if dest_file.exists():
+                        dest_file.unlink()
 
-            destination_dir.mkdir(parents=True, exist_ok=True)
-            if dest_file.exists():
-                dest_file.unlink()
+                    shutil.copyfile(highest_file, dest_file)
+                    files_published.append(new_file_name)
 
-            shutil.copyfile(highest_file, dest_file)
+            if files_published:
+                self.main_window.show_message(f"Published: {', '.join(files_published)}", "success")
+                self.main_window.directory_viewer.refresh_tree()
+                log_action(base_path=base_path, action="Publish_Shot", details=f"{department.upper()} | {shot_name}")
+            else:
+                QMessageBox.warning(self, "Not Found", f"No versioned files found in {source_dir}")
 
-            self.main_window.show_message(f"Published {highest_file.name} to {destination_file}", "success")
-            self.main_window.directory_viewer.refresh_tree()
-
-            log_action(
-                base_path=base_path,
-                action="Publish_Shot",
-                details=f"{department.upper()} / {shot_name} | Source: {highest_file.name}"
-            )
+        except Exception as e:
+            QMessageBox.critical(self, "Error", f"Failed to publish shot: {str(e)}")
 
 
 
