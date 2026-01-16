@@ -534,14 +534,7 @@ class PublishShotForm(QWidget):
         # Department Dropdown (Now Dynamic)
         layout.addWidget(QLabel("Department"))
         self.department_combo = QComboBox()
-        self.department_combo.currentIndexChanged.connect(self.update_shot_assets)
         layout.addWidget(self.department_combo)
-
-        
-        # Asset Name Dropdown (Now Dynamic)
-        layout.addWidget(QLabel("Asset Name"))
-        self.asset_combo = QComboBox()
-        layout.addWidget(self.asset_combo)
 
         # Publish Button
         self.publish_button = QPushButton("Publish Shot")
@@ -560,10 +553,8 @@ class PublishShotForm(QWidget):
         base_path = self.main_window.base_path
         shot_name = self.shot_name_combo.currentText()
 
-        # Safety Check: Prevent crash if base_path is not set
         if not base_path or shot_name == "No shots found":
             self.department_combo.clear()
-            self.asset_combo.clear()
             return
 
         depts = get_shot_departments(base_path, shot_name)
@@ -572,46 +563,9 @@ class PublishShotForm(QWidget):
         if depts:
             self.department_combo.addItems(depts)
             self.publish_button.setEnabled(True)
-            # Trigger asset update for the first department in the list
-            self.update_shot_assets()
         else:
             self.department_combo.addItem("No departments found")
             self.publish_button.setEnabled(False)
-
-    def update_shot_assets(self):
-        """Populates the Asset dropdown based on the selected department."""
-        base_path = self.main_window.base_path
-        shot_name = self.shot_name_combo.currentText()
-        dept_name = self.department_combo.currentText()
-
-        # 1. Safety Check: If any part of the path is missing, clear and exit
-        if not base_path or not shot_name or not dept_name or shot_name == "No shots found":
-            self.asset_combo.clear()
-            self.asset_combo.setEnabled(False)
-            return
-
-        # 2. Build the directory path safely
-        dept_dir = base_path / "prod" / "sequences" / shot_name / "working" / dept_name
-
-        self.asset_combo.clear()
-
-        if dept_dir.exists():
-            # Get all sub-directories
-            assets = [item.name for item in dept_dir.iterdir() if item.is_dir()]
-            
-            # Remove 'export' if it exists at this level
-            if "export" in assets:
-                assets.remove("export")
-
-            if assets:
-                self.asset_combo.addItems(sorted(assets))
-                self.asset_combo.setEnabled(True)
-                return
-
-        # Fallback if no specific asset folders are found
-        self.asset_combo.addItem("N/A")
-        self.asset_combo.setEnabled(False)
-
 
     def refresh_shots(self):
         base_path = self.main_window.base_path
@@ -627,48 +581,56 @@ class PublishShotForm(QWidget):
     def handle_publish_shot(self):
         base_path = self.main_window.base_path
         shot_name = self.shot_name_combo.currentText()
-        dept_folder = self.department_combo.currentText()
-        shot_asset = self.asset_combo.currentText()         
+        department = self.department_combo.currentText().lower()
 
         if not base_path or shot_name == "No shots found":
             return
 
-        # shot asset map to track file extensions
-        shot_asset_map = {
-            "anim": [(".usd", ".usd", "file"), (".fbx", ".fbx", "file"), (".mp4", ".mp4", "file")],
-            "camera": [(".usd", ".usd", "file"), (".fbx", ".fbx", "file"), (".abc", ".abc", "file")],
+        # THE MAP: Defines what to look for and what to rename it to
+        shot_department_map = {
+            "anim": [
+                (".usd", ".usd", "file"),
+                (".fbx", ".fbx", "file"),
+            ],
+            "camera": [
+                (".usd", ".usd", "file"), 
+                (".fbx", ".fbx", "file"),
+                (".abc", ".abc", "file")
+            ],
             "charfx": [(".usd", ".usd", "file")],
             "fx": [(".usd", ".usd", "file")],
             "light": [(".usd", ".usd", "file")],
             "playblast": [(".mp4", ".mp4", "file")],
-            "default": [(".usd", ".usd", "file")]
+            "default": [
+                (".usd", ".usd", "file"),
+                (".fbx", ".fbx", "file"),
+            ]
         }
-        target_configs = shot_asset_map.get(dept_folder, shot_asset_map["default"])
-        source_dir = base_path / "prod" / "sequences" / shot_name / "working" / dept_folder / shot_asset / "export"
 
-        if shot_asset == "playblast":
+        #target_configs = shot_department_map.get(department)
+        target_configs = shot_department_map[department] if department in shot_department_map else shot_department_map["default"]
+        if not target_configs:
+            QMessageBox.warning(self, "Warning", f"No publish logic for: {department}")
+            return
+
+        # Define directories
+        source_dir = base_path / "prod" / "sequences" / shot_name / "working" / department / "export"
+        if department == "playblast":
             destination_dir = base_path / "post" / "publish" / shot_name / "comp"
         else:
-            destination_dir = base_path / "prod" / "sequences" / shot_name / "publish" / dept_folder / shot_asset
+            destination_dir = base_path / "prod" / "sequences" / shot_name / "publish" / department
 
         destination_dir.mkdir(parents=True, exist_ok=True)
         files_published = []
 
         try:
+            # Loop through the map to handle multiple extensions (like for Camera)
             for source_ext, publish_ext, item_type in target_configs:
-                highest_file = find_highest_version_file(
-                    source_dir, 
-                    shot_name,   
-                    shot_asset,  
-                    source_ext
-                )
+                highest_file = find_highest_version_file(source_dir, shot_name, department, source_ext)
                 
                 if highest_file:
-                    if shot_asset == "playblast":
-                        new_file_name = f"{shot_name}{publish_ext}"
-                    else:
-                        new_file_name = f"{shot_name}_{shot_asset}{publish_ext}"
-                    
+                    # Custom naming for playblasts vs standard departments
+                    new_file_name = f"{shot_name}{publish_ext}" if department == "playblast" else f"{shot_name}_{department}{publish_ext}"
                     dest_file = destination_dir / new_file_name
 
                     if dest_file.exists():
@@ -680,14 +642,14 @@ class PublishShotForm(QWidget):
             if files_published:
                 self.main_window.show_message(f"Published: {', '.join(files_published)}", "success")
                 self.main_window.directory_viewer.refresh_tree()
-                log_action(base_path=base_path, action="Publish_Shot", details=f"PUBLISH | {new_file_name}")
+                log_action(base_path=base_path, action="Publish_Shot", details=f"{department.upper()} | {shot_name}")
             else:
-                QMessageBox.warning(self, "Not Found", f"No files matching {shot_name}_{shot_asset}_v found in {source_dir}")
+                QMessageBox.warning(self, "Not Found", f"No versioned files found in {source_dir}")
 
         except Exception as e:
-            import traceback
-            traceback.print_exc()
-            QMessageBox.critical(self, "Error", f"Failed: {str(e)}")
+            QMessageBox.critical(self, "Error", f"Failed to publish shot: {str(e)}")
+
+
 
 class CreateShotForm(QWidget):
 
