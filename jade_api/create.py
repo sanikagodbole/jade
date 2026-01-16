@@ -128,21 +128,35 @@ def create_new_shot(sequence_num: float, shot_num: float, shot_base_path: Path):
     
     # defining shot folder structures
     SHOT_WORKING_STRUCTURE = {
-        "light": {"export": {}},
-        "anim": {"export": {}},
-        "fx": {"export": {}},
-        "charfx": {"export": {}},
-        "camera": {"export": {}},
-        "playblast": {"export": {}},
+        "anim": {
+            "playblast": {"export": {}},
+            "emAnim": {"export": {}},
+            "chiAnim": {"export": {}},
+            },
+        "fx": {
+            "wispFx": {"export": {}},
+            },
+        "charfx": {
+            "wispFx": {"export": {}},
+            "emFx": {"export": {}},
+            "chiFx": {"export": {}},
+            },
     }
     
     SHOT_PUBLISH_STRUCTURE = {
-        "light": {},
-        "anim": {},
-        "fx": {},
-        "charfx": {},
-        "camera": {},
-        "playblast": {},
+        "anim": {
+            "playblast": {},
+            "emAnim": {},
+            "chiAnim": {},
+        },
+        "fx": {
+            "wispFx": {},
+        },
+        "charfx": {
+            "wispFx": {},
+            "emFx": {},
+            "chiFx": {},
+        },
     }
 
     COMP_WORKING_STRUCTURE = {
